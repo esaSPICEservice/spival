@@ -1,0 +1,23 @@
+.DS_Store
+.DS_Store?
+*.o
+.tar
+.gz
+.zip
+*.pyc
+*.so
+
+# Docs
+docs/make.bat
+docs/Makefile
+
+# Pycharm specific things
+.idea/
+
+# python things
+*.egg-info*
+dist/
+.cache/
+__pycache__/
+.eggs/
+build/

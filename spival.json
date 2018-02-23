@@ -1,0 +1,7 @@
+{
+  "version": "1.0",
+  "name": "spival Configuration File",
+  "mission": "ExoMars2016",
+  "skd_path": "/Users/mcosta/ExoMars2016/kernels",
+  "mk":"em16_ops.tm"
+}
