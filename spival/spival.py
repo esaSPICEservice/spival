@@ -1,14 +1,17 @@
 #!/usr/bin/env python3
 
 from spiops import spiops
-
+import shutil
+import os
 import nbformat as nbf
 from nbconvert.preprocessors import ExecutePreprocessor
 from nbconvert import HTMLExporter
 
 def spival(config):
 
-    with open('em16_ops.tm', 'w') as tm:
+    mk = config['mk']
+
+    with open(mk, 'w') as tm:
 
         with open(config['skd_path']+ '/mk/' + config['mk'], 'r') as f:
             for line in f:
@@ -17,19 +20,23 @@ def spival(config):
                                         "'"+config['skd_path']+"'")
                 tm.write(line)
 
-
-    mk = '"em16_ops.tm"'
-
+                if 'SKD_VERSION' in line:
+                    skd_version = line.split("'")[1]
+                else:
+                    skd_version = 'None'
 
     nb = nbf.v4.new_notebook()
 
-    text = "# My first automatic Jupyter Notebook\n" + \
-           "This is an auto-generated notebook."
+    text = "# ExoMars2016 SPICE Kernel Dataset Status\n" + \
+           "Last updated on {} by Marc Costa Sitja (ESAC/ESA)".format('10 Apr 2018') + \
+           "SKD version: {}\n".format(skd_version) + \
+           "\n" + \
+           "## Startup and Coverage\n"
 
     nb['cells'] = [nbf.v4.new_markdown_cell(text)]
 
     code = "import spiops as spiops \n" + \
-           "spiops.load({})\n".format(mk) + \
+           "spiops.load({})\n".format('"'+mk+'"') + \
            "start_time = {}\n".format('"2018-03-12T00:00:00"') + \
            "finish_time = {}\n".format('"2018-03-15T00:00:00"') + \
            "interval = spiops.TimeWindow(start_time, finish_time,resolution=60)\n" + \
@@ -38,6 +45,11 @@ def spival(config):
 
     nb['cells'] += [nbf.v4.new_code_cell(code)]
 
+    text = "## Geometry Plots\n" + \
+           "\n" + \
+           "TGO-Mars Distance in Km \n"
+
+    nb['cells'] += [nbf.v4.new_markdown_cell(text)]
 
     text = "| This | is   |\n" + \
            "|------|------|\n" + \
@@ -48,13 +60,11 @@ def spival(config):
 
     nb['cells'] += [nbf.v4.new_code_cell(code)]
 
-    nbf.write(nb, 'test.ipynb')
-
     ep = ExecutePreprocessor(timeout=600, kernel_name='python3')
 
     ep.preprocess(nb, {'metadata': {'path': ''}})
 
-    nbf.write(nb, 'test_executed.ipynb')
+    nbf.write(nb, mk.split('.')[0] + '.ipynb')
 
 
     html_exporter = HTMLExporter()
@@ -62,9 +72,13 @@ def spival(config):
 
     (body, resources) = html_exporter.from_notebook_node(nb)
 
-    with open('test_exectued.html', 'w') as h:
+    with open(mk.split('.')[0] +'.html', 'w') as h:
         for element in body:
             h.write(element)
+
+    shutil.move(mk.split('.')[0] +'.html', os.path.join(config['html'],
+                mk.split('.')[0]+'.html'))
+
 
 #    spiops.load('em16_ops.tm')
 #
