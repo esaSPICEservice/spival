@@ -81,15 +81,15 @@ def spival(config):
     return
 
 
-def test_cov_spk(spk):
-
-    cov = spiops.cov_spk_ker(spk=spk,
-                             time_format='UTC')
-
-    print('Coverage for',spk)
-    index = 0
-    for element in cov[0]:
-        print(element, cov[1][index])
-        index += 1
-
-    return
+#def test_cov_spk(spk):
+#
+#    cov = spiops.cov_spk_ker(spk=spk,
+#                             time_format='UTC')
+#
+#    print('Coverage for',spk)
+#    index = 0
+#    for element in cov[0]:
+#        print(element, cov[1][index])
+#        index += 1
+#
+#    return
