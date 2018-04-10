@@ -76,7 +76,7 @@ def spival(config):
         for element in body:
             h.write(element)
 
-    shutil.move(mk.split('.')[0] +'.html', os.path.join(config['html'],
+    shutil.move(mk.split('.')[0] +'.html', os.path.join(config['html_path'],
                 mk.split('.')[0]+'.html'))
 
 
