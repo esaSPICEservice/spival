@@ -1,13 +1,14 @@
 #!/usr/bin/env python3
 
-from spiops import spiops
+import glob
+from spiops import utils
 import shutil
 import os
 import nbformat as nbf
 from nbconvert.preprocessors import ExecutePreprocessor
 from nbconvert import HTMLExporter
 
-def spival(config):
+def jupyter_writer(config):
 
     mk = config['mk']
 
@@ -60,6 +61,8 @@ def spival(config):
 
     nb['cells'] += [nbf.v4.new_code_cell(code)]
 
+
+
     ep = ExecutePreprocessor(timeout=600, kernel_name='python3')
 
     ep.preprocess(nb, {'metadata': {'path': ''}})
@@ -80,30 +83,18 @@ def spival(config):
                 mk.split('.')[0]+'.html'))
 
 
-#    spiops.load('em16_ops.tm')
-#
-#    spk_list = []
-#
-#    with open('em16_ops.tm', 'r') as f:
-#        for line in f:
-#            if '.bsp' in line.lower():
-#                spk_list.append(line.split('/')[-1].strip()[:-1])#
-#
-#    for spk in spk_list:
-#        test_cov_spk(spk=config['skd_path']+'/spk/'+spk)
-
     return
 
+def skd_check():
 
-#def test_cov_spk(spk):
-#
-#    cov = spiops.cov_spk_ker(spk=spk,
-#                             time_format='UTC')
-#
-#    print('Coverage for',spk)
-#    index = 0
-#    for element in cov[0]:
-#        print(element, cov[1][index])
-#        index += 1
-#
-#    return
+    cwd = os.getcwd()
+    mks_in_dir = glob.glob('*.tm')
+    mks_in_dir += glob.glob('*.TM')
+
+    for mk_in_dir in mks_in_dir:
+        output = utils.brief(os.path.join(cwd,mk_in_dir))
+        print(output)
+        if 'SPICE(' in output:
+            raise ValueError('BRIEF utility could not run')
+
+    return
