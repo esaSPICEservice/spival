@@ -53,6 +53,7 @@ def write_ExoMars2016(config):
     # Notebook for Jenkins and HTML publication
     #
     output = 'ExoMars2016_' + replacements['skd_version'] + '.ipynb'
+    replacements['skd_path'] = config['skd_path']
     utils.fill_template(template, output, replacements)
     shutil.move(output, os.path.join(config['notebooks_path'],output))
 
@@ -61,6 +62,7 @@ def write_ExoMars2016(config):
     #
     output = 'index.ipynb'
     replacements['metakernel'] = config['github_skd_path'] + '/mk/' + config['mk']
+    replacements['skd_path'] = config['github_skd_path']
     utils.fill_template(template, output, replacements)
     shutil.move(output, os.path.join(config['notebooks_path'],output))
 

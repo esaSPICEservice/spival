@@ -65,8 +65,8 @@
    "metadata": {},
    "outputs": [],
    "source": [
-    "measured_ck = '{measured_ck}'\n",
-    "predicted_ck = '{predicted_ck}'\n",
+    "measured_ck = '{skd_path}/{measured_ck}'\n",
+    "predicted_ck = '{skd_path}/{predicted_ck}'\n",
     "\n",
     "spiops.ckdiff_error(measured_ck, predicted_ck, spacecraft_frame, target_frame,\n",
     "                    resolution, tolerance, notebook=True,\n",
