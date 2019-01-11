@@ -74,7 +74,7 @@ def skd_check():
     mks_in_dir += glob.glob('*.TM')
 
     for mk_in_dir in mks_in_dir:
-        output = utils.brief(os.path.join(cwd,mk_in_dir))
+        output = spiops.utils.brief(os.path.join(cwd,mk_in_dir))
         print(output)
         if 'SPICE(' in output:
             raise ValueError('BRIEF utility could not run')
