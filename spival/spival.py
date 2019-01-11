@@ -52,7 +52,7 @@ def write_ExoMars2016(config):
     #
     # Notebook for Jenkins and HTML publication
     #
-    output = template.split('.')[0].split('/')[-1] + '_' + replacements['skd_version'] + '.ipynb'
+    output = 'ExoMars2016_' + replacements['skd_version'] + '.ipynb'
     utils.fill_template(template, output, replacements)
     shutil.move(output, os.path.join(config['notebooks_path'],output))
 
