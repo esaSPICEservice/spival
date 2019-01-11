@@ -64,6 +64,6 @@ setup(
         python_requires='>=3',
 
         # Scripts
-        scripts=['bin/spival','bin/spival-skd']
+        scripts=['bin/spival-em16','bin/spival-skd']
 
       )

@@ -2,7 +2,8 @@
   "version": "1.0",
   "name": "spival Configuration File",
   "mission": "ExoMars2016",
+  "github_skd_path": "ExoMars2016/kernels",
   "skd_path": "/Users/mcosta/ExoMars2016/kernels",
-  "mk":"em16_ops.tm",
-  "html_path": ""
+  "notebooks_path":"/Users/mcosta/Dropbox/SPICE/SPICE_CROSS_MISSION/spival/spival/tests/notebooks",
+  "mk":"em16_ops_local.tm"
 }
