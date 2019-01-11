@@ -47,7 +47,7 @@ def write_ExoMars2016(config):
     replacements['start_time'] = start_time
     replacements['finish_time'] = finish_time
 
-    template = root_dir + '/notebooks/ExoMars2016.ipynb'
+    template = root_dir + '/notebooks/ExoMars2016.py'
 
     #
     # Notebook for Jenkins and HTML publication
