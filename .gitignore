@@ -6,7 +6,6 @@
 .zip
 *.pyc
 *.so
-*.ipynb
 
 # Docs
 docs/make.bat
