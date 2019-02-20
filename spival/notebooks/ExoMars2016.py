@@ -6,7 +6,9 @@
    "source": [
     "# ExoMars2016 SPICE Kernel Dataset Status\n",
     "\n",
-    "Last updated on {current_time} by Marc Costa Sitja (ESAC/ESA)SKD version: {skd_version}\n",
+    "Last updated on {current_time} by Marc Costa Sitja (ESAC/ESA) \n",
+    "SKD version:    {skd_version}\n",
+    "SPIVAL version: {spival_version}\n",
     "\n",
     "## Startup and Coverage\n"
    ]
@@ -19,22 +21,22 @@
    "source": [
     "import spiops\n",
     "\n",
-    "spiops.load('{metakernel}')\n",
+    "spiops.load('{metakernel}')                  # The meta-kernel is loaded \n",
     "\n",
-    "start_time = '{start_time}'\n",
-    "finish_time ='{finish_time}'\n",
+    "start_time = '{start_time}'                  # Start time\n",
+    "finish_time ='{finish_time}'                 # Finish time\n",
     "\n",
-    "interval = spiops.TimeWindow(start_time, finish_time,resolution=60)\n",
-    "\n",
-    "mars = spiops.Target('MARS', time=interval, frame='IAU_MARS')\n",
-    "tgo = spiops.Observer('TGO', time=interval, target=mars)"
+    "interval = spiops.TimeWindow(start_time, finish_time,resolution=60) # spiops object TimeWindow generated\n",
+    "mars = spiops.Target('MARS', time=interval, frame='IAU_MARS')       # spiops object Target Mars generated\n",
+    "tgo = spiops.Observer('TGO', time=interval, target=mars)            # spiops object Observer TGO generated"
    ]
   },
   {
    "cell_type": "markdown",
    "metadata": {},
    "source": [
-    "## Geometry Plots"
+    "## Geometry Plots\n",
+    "Basic plots for quick geometry assessment"
    ]
   },
   {
@@ -43,8 +45,7 @@
    "metadata": {},
    "outputs": [],
    "source": [
-    "tgo.Plot('distance', notebook=True)\n",
-    "tgo.Plot('zaxis_target_angle', notebook=True)"
+    "tgo.Plot('altitude', notebook=True)            # TGO-Mars Altitude"
    ]
   },
   {
@@ -53,24 +54,105 @@
    "metadata": {},
    "outputs": [],
    "source": [
-    "resolution = 4\n",
-    "tolerance = 0.0001  #[DEG]\n",
+    "tgo.Plot('myaxis_target_angle', notebook=True) # TGO -Y Axis and Mars Angle"
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": null,
+   "metadata": {},
+   "outputs": [],
+   "source": [
+    "tgo.Plot('latitude', notebook=True)            # Latitude"
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": null,
+   "metadata": {},
+   "outputs": [],
+   "source": [
+    "tgo.Plot('longitude',notebook=True)            # Longitude"
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": null,
+   "metadata": {},
+   "outputs": [],
+   "source": [
+    "tgo.Plot('groundtrack', notebook=True)         # Groundtrack"
+   ]
+  },
+  {
+   "cell_type": "markdown",
+   "metadata": {},
+   "source": [
+    "## Attitude Error\n",
+    "Comparison of -Y axis orientation between predicted and measured attitude in milidegrees "
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": null,
+   "metadata": {},
+   "outputs": [],
+   "source": [
+    "resolution = 16\n",
+    "tolerance =  0.0001  #[DEG]\n",
     "spacecraft_frame = 'TGO_SPACECRAFT'\n",
-    "target_frame = 'J2000'"
-   ]
-  },
-  {
-   "cell_type": "code",
-   "execution_count": null,
-   "metadata": {},
-   "outputs": [],
-   "source": [
+    "target_frame =     'J2000'\n",
+    "\n",
     "measured_ck = '{skd_path}/ck/{measured_ck}'\n",
     "predicted_ck = '{skd_path}/ck/{predicted_ck}'\n",
     "\n",
-    "spiops.ckdiff_error(measured_ck, predicted_ck, spacecraft_frame, target_frame,\n",
-    "                    resolution, tolerance, notebook=True,\n",
-    "                    plot_style='circle')"
+    "spiops.ckdiff_error(measured_ck, predicted_ck, spacecraft_frame, target_frame, resolution, tolerance, \n",
+    "                    notebook=True, plot_style='circle', boresight=[0,-1,0])"
+   ]
+  },
+  {
+   "cell_type": "markdown",
+   "metadata": {},
+   "source": [
+    "## S/C Structures Orientation\n",
+    "Solar Array Orientation, High Gain Antenna Orientation\n",
+    "\n"
+   ]
+  },
+{
+   "cell_type": "code",
+   "execution_count": null,
+   "metadata": {},
+   "outputs": [],
+   "source": [
+    "tgo.Plot('sa_ang', notebook=True)              # Solar Array (SA) Angles"
+   ]
+  },
+{
+   "cell_type": "code",
+   "execution_count": null,
+   "metadata": {},
+   "outputs": [],
+   "source": [
+    "tgo.Plot('saa_sa', notebook=True)              # SA Solar Aspect Angle"
+   ]
+  },
+{
+   "cell_type": "code",
+   "execution_count": null,
+   "metadata": {},
+   "outputs": [],
+   "source": [
+    "tgo.Plot('hga_earth', notebook=True)           # High Gain Antenna - Earth Angle"
+   ]
+  },
+{
+   "cell_type": "code",
+   "execution_count": null,
+   "metadata": {},
+   "outputs": [],
+   "source": [
+    "tgo.Plot('hga_angles', notebook=True)          # High Gain Antenna Angles"
    ]
   }
  ],

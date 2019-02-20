@@ -43,9 +43,10 @@ def write_ExoMars2016(config):
     now = datetime.datetime.now()
     replacements['current_time'] = now.strftime("%Y-%M-%dT%H:%M")
 
-    [start_time, finish_time]  = spiops.cov_ck_ker(config['skd_path']+ '/ck/' + replacements['measured_ck'], 'TGO_SPACECRAFT', time_format='UTC')
-    replacements['start_time'] = start_time
-    replacements['finish_time'] = finish_time
+    boundary  = spiops.cov_ck_ker(config['skd_path']+ '/ck/' + replacements['measured_ck'], 'TGO_SPACECRAFT', time_format='UTC')
+
+    replacements['start_time'] = boundary[0]
+    replacements['finish_time'] = boundary[-1]
 
     template = root_dir + '/notebooks/ExoMars2016.py'
 
@@ -69,6 +70,30 @@ def write_ExoMars2016(config):
     return
 
 
+#def orbnum_check(config):
+#
+#
+#    kernel_path = os.path.join(path, kernel_type)
+#
+#    #
+#    # Get the kernels of type ``type`` from the ``path``/``type`` directory.
+#    #
+#    kernels_with_path = glob.glob(kernel_path + '/' + pattern)
+#
+#
+#    with open(config['skd_path']+'/orbnum' 'r') as f:
+#        for line in f:
+#            if 'SKD_VERSION' in line:
+#                replacements['skd_version'] = line.split("'")[1]
+#                break
+#            else:
+#                replacements['skd_version'] = 'N/A'
+#
+#    assert True == True
+#
+#    return
+
+
 def skd_check():
 
     cwd = os.getcwd()
@@ -80,5 +105,12 @@ def skd_check():
         print(output)
         if 'SPICE(' in output:
             raise ValueError('BRIEF utility could not run')
+
+        output = spiops.utils.optiks(os.path.join(cwd, mk_in_dir),
+                                     '2019-01-01T00:00:00')
+        print(output)
+        #if 'Unable to compute boresight.' in output:
+        #     raise ValueError('BRIEF utility could not run')
+
 
     return
