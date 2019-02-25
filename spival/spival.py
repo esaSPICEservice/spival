@@ -155,9 +155,9 @@ def update_html(config):
 
     cwd = os.getcwd()
     os.chdir(config['index_path'])
-    em16_in_dir = glob.glob('ExoMars2016_*.html')
-    bc_in_dir = glob.glob('BEPICOLOMBO_*.html')
-    mex_in_dir = glob.glob('MARS-EXPRESS_*.html')
+    em16_in_dir = list(reversed(glob.glob('ExoMars2016_*.html')))
+    bc_in_dir = list(reversed(glob.glob('BEPICOLOMBO_*.html')))
+    mex_in_dir = list(reversed( glob.glob('MARS-EXPRESS_*.html')))
     root_dir = os.path.dirname(__file__)
 
     source = os.listdir(root_dir+'/images/')
