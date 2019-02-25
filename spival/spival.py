@@ -143,7 +143,7 @@ def skd_check():
 
         now = datetime.datetime.now()
         output = spiops.utils.optiks(os.path.join(cwd, mk_in_dir),
-                                     now.strftime("%Y-%M-%dT%H:%M"))
+                                     now.strftime("%Y-%m-%dT%H:%M:%S"))
         print(output)
         #if 'Unable to compute boresight.' in output:
         #     raise ValueError('BRIEF utility could not run')
