@@ -58,7 +58,7 @@ setup(
         packages=find_packages(),
 
         # Include additional files into the package
-        include_package_data=False,
+        include_package_data=True,
 
         # Dependent packages (distributions)
         python_requires='>=3',
