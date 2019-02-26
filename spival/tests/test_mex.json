@@ -1,0 +1,9 @@
+{
+  "version": "1.0",
+  "name": "spival Configuration File",
+  "mission": "MarsExpress",
+  "github_skd_path": "MARS-EXPRESS/kernels",
+  "skd_path": "/Users/mcosta/MARS-EXPRESS/kernels",
+  "notebooks_path":"/Users/mcosta/Dropbox/SPICE/SPICE_CROSS_MISSION/spival/spival/tests/notebooks",
+  "index_path":"/Users/mcosta/Dropbox/SPICE/SPICE_CROSS_MISSION/spival/spival/tests/html",
+  "mk":"MEX_OPS_LOCAL.TM"}

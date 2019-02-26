@@ -38,7 +38,7 @@ def write_ExoMars2016(config):
         #
         # We obtain the predicted and the measured CKs
         #
-    replacements['predicted_ck'] = spiops.utils.get_latest_kernel('ck',config['skd_path'],'em16_tgo_sc_fsp_*_s????????_v*.bc')
+    replacements['predicted_ck'] = spiops.utils.get_latest_kernel('ck',config['skd_path'],'em16_tgo_sc_fsp_*_s????????_v??.bc')
     replacements['measured_ck'] = spiops.utils.get_latest_kernel('ck', config['skd_path'],'em16_tgo_sc_ssm_*_s????????_v??.bc')
 
         #
@@ -84,6 +84,180 @@ def write_ExoMars2016(config):
     # Notebook for Jenkins and HTML publication
     #
     output = 'ExoMars2016_' + replacements['skd_version'] + '.ipynb'
+    replacements['skd_path'] = config['skd_path']
+    utils.fill_template(template, output, replacements)
+    shutil.move(output, os.path.join(config['notebooks_path'],output))
+
+    #
+    # Notebook for the GitHub Laboratory
+    #
+    output = 'index.ipynb'
+    replacements['metakernel'] = config['github_skd_path'] + '/mk/' + config['mk']
+    replacements['skd_path'] = config['github_skd_path']
+    utils.fill_template(template, output, replacements)
+    shutil.move(output, os.path.join(config['notebooks_path'],output))
+
+    #
+    # Update the HTMLs
+    #
+    update_html(config)
+
+    return
+
+
+def write_BepiColombo(config):
+
+    root_dir = os.path.dirname(__file__)
+
+    repo = git.Repo(config['skd_path'][:-7])
+    tags = repo.tags
+
+    #
+    # Set the replacements for the Notebook template
+    #
+    replacements = {}
+    replacements['metakernel'] = config['skd_path']+ '/mk/' + config['mk']
+
+
+    spiops.load(replacements['metakernel'])
+
+
+    with open(replacements['metakernel'], 'r') as f:
+        for line in f:
+            if 'SKD_VERSION' in line:
+                replacements['skd_version'] = line.split("'")[1]
+                break
+            else:
+                replacements['skd_version'] = 'N/A'
+
+        #
+        # We obtain the predicted and the measured CKs
+        #
+    replacements['predicted_ck'] = spiops.utils.get_latest_kernel('ck',config['skd_path'],'bc_mpo_sc_fsp_*_f????????_v??.bc')
+    replacements['measured_ck'] = spiops.utils.get_latest_kernel('ck', config['skd_path'],'bc_mpo_sc_scm_*_s????????_v??.bc')
+
+        #
+        # We obtain today's date
+        #
+    now = datetime.datetime.now()
+    replacements['current_time'] = now.strftime("%Y-%m-%dT%H:%M:%S")
+
+    boundary  = spiops.cov_ck_ker(config['skd_path']+ '/ck/' + replacements['measured_ck'], 'MPO_SPACECRAFT', time_format='UTC')
+
+    mes_finish_time = boundary[-1][:-4]
+    mes_start_date = datetime.datetime.strptime(mes_finish_time, '%Y-%m-%dT%H:%M:%S')
+    mes_start_date = mes_start_date - datetime.timedelta(days=7)
+    mes_start_time = mes_start_date.strftime("%Y-%m-%dT%H:%M:%S")
+
+    #
+    # We obtain the dates from the Tags
+    #
+    start_date = str(tags[-2]).split('_')[1]
+    start_time = '{}-{}-{}T00:00:00'.format(start_date[0:4],start_date[4:6],start_date[6:8])
+
+    finish_date = str(tags[-1]).split('_')[1]
+    finish_time = '{}-{}-{}T00:00:00'.format(start_date[0:4],start_date[4:6],start_date[6:8])
+
+    index = -2
+    while start_time == finish_time:
+        start_date = str(tags[index]).split('_')[1]
+        start_time = '{}-{}-{}T00:00:00'.format(start_date[0:4],
+                                                start_date[4:6],
+                                                start_date[6:8])
+        index -= 1
+
+
+    replacements['start_time'] = start_time
+    replacements['finish_time'] = finish_time
+
+    replacements['start_time_measured'] = mes_start_time
+    replacements['finish_time_measured'] = mes_finish_time
+
+    template = root_dir + '/notebooks/BEPICOLOMBO.ipynb'
+
+    #
+    # Notebook for Jenkins and HTML publication
+    #
+    output = 'BEPICOLOMBO_' + replacements['skd_version'] + '.ipynb'
+    replacements['skd_path'] = config['skd_path']
+    utils.fill_template(template, output, replacements)
+    shutil.move(output, os.path.join(config['notebooks_path'],output))
+
+    #
+    # Notebook for the GitHub Laboratory
+    #
+    output = 'index.ipynb'
+    replacements['metakernel'] = config['github_skd_path'] + '/mk/' + config['mk']
+    replacements['skd_path'] = config['github_skd_path']
+    utils.fill_template(template, output, replacements)
+    shutil.move(output, os.path.join(config['notebooks_path'],output))
+
+    #
+    # Update the HTMLs
+    #
+    update_html(config)
+
+    return
+
+
+def write_MarsExpress(config):
+
+    root_dir = os.path.dirname(__file__)
+
+    repo = git.Repo(config['skd_path'][:-7])
+    tags = repo.tags
+
+    #
+    # Set the replacements for the Notebook template
+    #
+    replacements = {}
+    replacements['metakernel'] = config['skd_path']+ '/mk/' + config['mk']
+
+
+    spiops.load(replacements['metakernel'])
+
+
+    with open(replacements['metakernel'], 'r') as f:
+        for line in f:
+            if 'SKD_VERSION' in line:
+                replacements['skd_version'] = line.split("'")[1]
+                break
+            else:
+                replacements['skd_version'] = 'N/A'
+
+        #
+        # We obtain today's date
+        #
+    now = datetime.datetime.now()
+    replacements['current_time'] = now.strftime("%Y-%m-%dT%H:%M:%S")
+
+    #
+    # We obtain the dates from the Tags
+    #
+    start_date = str(tags[-2]).split('_')[1]
+    start_time = '{}-{}-{}T00:00:00'.format(start_date[0:4],start_date[4:6],start_date[6:8])
+
+    finish_date = str(tags[-1]).split('_')[1]
+    finish_time = '{}-{}-{}T00:00:00'.format(start_date[0:4],start_date[4:6],start_date[6:8])
+
+    index = -2
+    while start_time == finish_time:
+        start_date = str(tags[index]).split('_')[1]
+        start_time = '{}-{}-{}T00:00:00'.format(start_date[0:4],
+                                                start_date[4:6],
+                                                start_date[6:8])
+        index -= 1
+
+
+    replacements['start_time'] = start_time
+    replacements['finish_time'] = finish_time
+
+    template = root_dir + '/notebooks/MARS-EXPRESS.ipynb'
+
+    #
+    # Notebook for Jenkins and HTML publication
+    #
+    output = 'MARS-EXPRESS_' + replacements['skd_version'] + '.ipynb'
     replacements['skd_path'] = config['skd_path']
     utils.fill_template(template, output, replacements)
     shutil.move(output, os.path.join(config['notebooks_path'],output))
