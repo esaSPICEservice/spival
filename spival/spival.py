@@ -248,6 +248,8 @@ def write_MarsExpress(config):
                                                 start_date[6:8])
         index -= 1
 
+    print('Notebook start time {}'.format(start_time))
+    print('Notebook finish time {}'.format(finish_time))
 
     replacements['start_time'] = start_time
     replacements['finish_time'] = finish_time
