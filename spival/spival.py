@@ -238,7 +238,7 @@ def write_MarsExpress(config):
     start_time = '{}-{}-{}T00:00:00'.format(start_date[0:4],start_date[4:6],start_date[6:8])
 
     finish_date = str(tags[-1]).split('_')[1]
-    finish_time = '{}-{}-{}T00:00:00'.format(start_date[0:4],start_date[4:6],start_date[6:8])
+    finish_time = '{}-{}-{}T00:00:00'.format(finish_date[0:4],finish_date[4:6],finish_date[6:8])
 
     index = -2
     while start_time == finish_time:
