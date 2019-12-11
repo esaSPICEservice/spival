@@ -3,7 +3,7 @@
   "name": "spival Configuration File",
   "mission": "BepiColombo",
   "github_skd_path": "BEPICOLOMBO/kernels",
-  "skd_path": "/Users/mcosta/BEPICOLOMBO/kernels",
+  "skd_path": "/Users/mcosta/SPICE/BEPICOLOMBO/kernels",
   "notebooks_path":"/Users/mcosta/Dropbox/SPICE/SPICE_CROSS_MISSION/spival/spival/tests/notebooks",
   "index_path":"/Users/mcosta/Dropbox/SPICE/SPICE_CROSS_MISSION/spival/spival/tests/html",
   "mk":"bc_ops_local.tm"}

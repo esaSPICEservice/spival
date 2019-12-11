@@ -6,7 +6,7 @@ import datetime
 import shutil
 import git
 
-import spiops
+from spiops import spiops
 
 from .utils import utils
 
@@ -38,8 +38,8 @@ def write_ExoMars2016(config):
         #
         # We obtain the predicted and the measured CKs
         #
-    replacements['predicted_ck'] = spiops.utils.get_latest_kernel('ck',config['skd_path'],'em16_tgo_sc_fsp_*_s????????_v??.bc')
-    replacements['measured_ck'] = spiops.utils.get_latest_kernel('ck', config['skd_path'],'em16_tgo_sc_ssm_*_s????????_v??.bc')
+    replacements['predicted_ck'] = spiops.get_latest_kernel('ck',config['skd_path'],'em16_tgo_sc_fsp_*_s????????_v??.bc')
+    replacements['measured_ck'] = spiops.get_latest_kernel('ck', config['skd_path'],'em16_tgo_sc_ssm_*_s????????_v??.bc')
 
         #
         # We obtain today's date
@@ -133,8 +133,8 @@ def write_BepiColombo(config):
         #
         # We obtain the predicted and the measured CKs
         #
-    replacements['predicted_ck'] = spiops.utils.get_latest_kernel('ck',config['skd_path'],'bc_mpo_sc_fsp_*_f????????_v??.bc')
-    replacements['measured_ck'] = spiops.utils.get_latest_kernel('ck', config['skd_path'],'bc_mpo_sc_scm_*_s????????_v??.bc')
+    replacements['predicted_ck'] = spiops.get_latest_kernel('ck',config['skd_path'],'bc_mpo_sc_fsp_*_f????????_v??.bc')
+    replacements['measured_ck'] = spiops.get_latest_kernel('ck', config['skd_path'],'bc_mpo_sc_scm_*_s????????_v??.bc')
 
         #
         # We obtain today's date
@@ -312,13 +312,13 @@ def skd_check():
     mks_in_dir += glob.glob('*.TM')
 
     for mk_in_dir in mks_in_dir:
-        output = spiops.utils.brief(os.path.join(cwd,mk_in_dir))
+        output = spiops.brief(os.path.join(cwd,mk_in_dir))
         print(output)
         if 'SPICE(' in output:
             raise ValueError('BRIEF utility could not run')
 
         now = datetime.datetime.now()
-        output = spiops.utils.optiks(os.path.join(cwd, mk_in_dir),
+        output = spiops.optiks(os.path.join(cwd, mk_in_dir),
                                      now.strftime("%Y-%m-%dT%H:%M:%S"))
         print(output)
         #if 'Unable to compute boresight.' in output:
