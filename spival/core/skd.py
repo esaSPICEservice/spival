@@ -49,6 +49,9 @@ def write_ExoMars2016(config):
     now = datetime.datetime.now()
     replacements['current_time'] = now.strftime("%Y-%m-%dT%H:%M:%S")
 
+    print(replacements)
+    print(config['skd_path']+ '/ck/' + replacements['measured_ck'])
+
     boundary  = spiops.cov_ck_ker(config['skd_path']+ '/ck/' + replacements['measured_ck'], 'TGO_SPACECRAFT', time_format='UTC')
 
     mes_finish_time = boundary[-1][:-4]
