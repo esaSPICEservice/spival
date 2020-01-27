@@ -117,7 +117,7 @@ def main(config=False, debug=False, log=False, mission=False):
     if args.check:
         return check()
 
-    if args.config:
+    if args.config != 'stdout':
         config = args.config
 
     #
