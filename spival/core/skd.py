@@ -49,12 +49,13 @@ def write_ExoMars2016(config):
     now = datetime.datetime.now()
     replacements['current_time'] = now.strftime("%Y-%m-%dT%H:%M:%S")
 
-    print(replacements)
-    print(config['skd_path']+ '/ck/' + replacements['measured_ck'])
+    try:
+        boundary  = spiops.cov_ck_ker(config['skd_path']+ '/ck/' + replacements['measured_ck'], 'TGO_SPACECRAFT', time_format='UTC')
+        mes_finish_time = boundary[-1][:-4]
+    except:
+        print(f"WARNING: Finish time for {replacements['measured_ck']} could not be determined")
+        mes_finish_time = now.strftime("%Y-%m-%dT%H:%M:%S")
 
-    boundary  = spiops.cov_ck_ker(config['skd_path']+ '/ck/' + replacements['measured_ck'], 'TGO_SPACECRAFT', time_format='UTC')
-
-    mes_finish_time = boundary[-1][:-4]
     mes_start_date = datetime.datetime.strptime(mes_finish_time, '%Y-%m-%dT%H:%M:%S')
     mes_start_date = mes_start_date - datetime.timedelta(days=7)
     mes_start_time = mes_start_date.strftime("%Y-%m-%dT%H:%M:%S")
