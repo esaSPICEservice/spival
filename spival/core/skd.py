@@ -324,8 +324,7 @@ def check(dir=False):
             raise ValueError('BRIEF utility could not run')
 
         now = datetime.datetime.now()
-        output = spiops.optiks(os.path.join(cwd, mk_in_dir),
-                                     now.strftime("%Y-%m-%dT%H:%M:%S"))
+        output = spiops.optiks(os.path.join(cwd, mk_in_dir),now.strftime("%Y-%m-%dT%H:%M:%S"))
         print(output)
         #if 'Unable to compute boresight.' in output:
         #     raise ValueError('BRIEF utility could not run')
