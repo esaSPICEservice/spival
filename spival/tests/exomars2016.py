@@ -7,4 +7,4 @@ def runSPIVAL(debug=False, log=False):
 
 
 if __name__ == '__main__':
-    runSPIVAL(debug=False, log=True)
+    runSPIVAL(debug=True, log=True)

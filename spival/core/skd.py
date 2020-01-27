@@ -10,6 +10,7 @@ import platform
 import spival
 
 from spiops import spiops
+from spiops.utils.utils import get_latest_kernel
 
 from spival.utils.utils import fill_template
 
@@ -39,8 +40,8 @@ def write_ExoMars2016(config):
         #
         # We obtain the predicted and the measured CKs
         #
-    replacements['predicted_ck'] = spiops.get_latest_kernel('ck',config['skd_path'],'em16_tgo_sc_fsp_*_s????????_v??.bc')
-    replacements['measured_ck'] = spiops.get_latest_kernel('ck', config['skd_path'],'em16_tgo_sc_ssm_*_s????????_v??.bc')
+    replacements['predicted_ck'] = get_latest_kernel('ck',config['skd_path'],'em16_tgo_sc_fsp_*_s????????_v??.bc')
+    replacements['measured_ck'] = get_latest_kernel('ck', config['skd_path'],'em16_tgo_sc_ssm_*_s????????_v??.bc')
 
         #
         # We obtain today's date
@@ -134,8 +135,8 @@ def write_BepiColombo(config):
         #
         # We obtain the predicted and the measured CKs
         #
-    replacements['predicted_ck'] = spiops.get_latest_kernel('ck',config['skd_path'],'bc_mpo_sc_fsp_*_f????????_v??.bc')
-    replacements['measured_ck'] = spiops.get_latest_kernel('ck', config['skd_path'],'bc_mpo_sc_scm_*_s????????_v??.bc')
+    replacements['predicted_ck'] = get_latest_kernel('ck',config['skd_path'],'bc_mpo_sc_fsp_*_f????????_v??.bc')
+    replacements['measured_ck'] = get_latest_kernel('ck', config['skd_path'],'bc_mpo_sc_scm_*_s????????_v??.bc')
 
         #
         # We obtain today's date
