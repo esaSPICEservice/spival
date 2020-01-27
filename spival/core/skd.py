@@ -5,14 +5,15 @@ import os
 import datetime
 import shutil
 import git
+import platform
+
+import spival
 
 from spiops import spiops
 
-from .utils import utils
+from spival.utils.utils import fill_template
 
 def write_ExoMars2016(config):
-
-    root_dir = os.path.dirname(__file__)
 
     repo = git.Repo(config['skd_path'][:-7])
     tags = repo.tags
@@ -78,14 +79,14 @@ def write_ExoMars2016(config):
     replacements['start_time_measured'] = mes_start_time
     replacements['finish_time_measured'] = mes_finish_time
 
-    template = root_dir + '/notebooks/ExoMars2016.ipynb'
+    template = config['root_dir'] + '/notebooks/ExoMars2016.ipynb'
 
     #
     # Notebook for Jenkins and HTML publication
     #
     output = 'ExoMars2016_' + replacements['skd_version'] + '.ipynb'
     replacements['skd_path'] = config['skd_path']
-    utils.fill_template(template, output, replacements)
+    fill_template(template, output, replacements)
     shutil.move(output, os.path.join(config['notebooks_path'],output))
 
     #
@@ -94,7 +95,7 @@ def write_ExoMars2016(config):
     output = 'index.ipynb'
     replacements['metakernel'] = config['github_skd_path'] + '/mk/' + config['mk']
     replacements['skd_path'] = config['github_skd_path']
-    utils.fill_template(template, output, replacements)
+    fill_template(template, output, replacements)
     shutil.move(output, os.path.join(config['notebooks_path'],output))
 
     #
@@ -180,7 +181,7 @@ def write_BepiColombo(config):
     #
     output = 'BEPICOLOMBO_' + replacements['skd_version'] + '.ipynb'
     replacements['skd_path'] = config['skd_path']
-    utils.fill_template(template, output, replacements)
+    fill_template(template, output, replacements)
     shutil.move(output, os.path.join(config['notebooks_path'],output))
 
     #
@@ -189,7 +190,7 @@ def write_BepiColombo(config):
     output = 'index.ipynb'
     replacements['metakernel'] = config['github_skd_path'] + '/mk/' + config['mk']
     replacements['skd_path'] = config['github_skd_path']
-    utils.fill_template(template, output, replacements)
+    fill_template(template, output, replacements)
     shutil.move(output, os.path.join(config['notebooks_path'],output))
 
     #
@@ -261,7 +262,7 @@ def write_MarsExpress(config):
     #
     output = 'MARS-EXPRESS_' + replacements['skd_version'] + '.ipynb'
     replacements['skd_path'] = config['skd_path']
-    utils.fill_template(template, output, replacements)
+    fill_template(template, output, replacements)
     shutil.move(output, os.path.join(config['notebooks_path'],output))
 
     #
@@ -270,7 +271,7 @@ def write_MarsExpress(config):
     output = 'index.ipynb'
     replacements['metakernel'] = config['github_skd_path'] + '/mk/' + config['mk']
     replacements['skd_path'] = config['github_skd_path']
-    utils.fill_template(template, output, replacements)
+    fill_template(template, output, replacements)
     shutil.move(output, os.path.join(config['notebooks_path'],output))
 
     #
@@ -305,9 +306,14 @@ def write_MarsExpress(config):
 #    return
 
 
-def skd_check():
+def check(dir=False):
 
-    cwd = os.getcwd()
+    if dir:
+        cwd = dir
+        os.chdir(dir)
+    else:
+        cwd = os.getcwd()
+
     mks_in_dir = glob.glob('*.tm')
     mks_in_dir += glob.glob('*.TM')
 
@@ -324,6 +330,7 @@ def skd_check():
         #if 'Unable to compute boresight.' in output:
         #     raise ValueError('BRIEF utility could not run')
 
+    os.chdir(cwd)
 
     return
 
@@ -334,7 +341,7 @@ def update_html(config):
     em16_in_dir = list(reversed(glob.glob('ExoMars2016_*.html')))
     bc_in_dir = list(reversed(glob.glob('BEPICOLOMBO_*.html')))
     mex_in_dir = list(reversed( glob.glob('MARS-EXPRESS_*.html')))
-    root_dir = os.path.dirname(__file__)
+    root_dir = config['root_dir']
 
     source = os.listdir(root_dir+'/images/')
     for files in source:
@@ -364,3 +371,4 @@ def update_html(config):
 
 
     return
+

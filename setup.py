@@ -19,12 +19,11 @@ with open(path.join(here, 'README.md'), encoding='utf-8') as f:
 
 def get_version():
 
-    with open('version', 'r') as f:
+    with open('spival/config/version', 'r') as f:
         for line in f:
             version = line
 
     return version
-
 
 setup(
         name='spival',
@@ -32,7 +31,7 @@ setup(
         version=get_version(),
 
         description='SPICE Kernel Dataset in Git',
-        url="https://mcosta@repos.cosmos.esa.int/socci/scm/spice/spival.git",
+        url="https://github.com/esaSPICEservice/spival",
 
         author='Marc Costa Sitja (ESA SPICE Service)',
         author_email='esa_spice@sciops.esa.int',
@@ -64,6 +63,7 @@ setup(
         python_requires='>=3',
 
         # Scripts
-        scripts=['bin/spival-em16','bin/spival-bc','bin/spival-mex','bin/spival-skd']
+        entry_points = {'console_scripts': ['spival=spival.command_line:main']}
+
 
       )
