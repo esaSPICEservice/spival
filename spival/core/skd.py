@@ -113,8 +113,6 @@ def write_ExoMars2016(config):
 
 def write_BepiColombo(config):
 
-    root_dir = os.path.dirname(__file__)
-
     repo = git.Repo(config['skd_path'][:-7])
     tags = repo.tags
 
@@ -179,7 +177,7 @@ def write_BepiColombo(config):
     replacements['start_time_measured'] = mes_start_time
     replacements['finish_time_measured'] = mes_finish_time
 
-    template = root_dir + '/notebooks/BEPICOLOMBO.ipynb'
+    template = config['root_dir'] + '/notebooks/BEPICOLOMBO.ipynb'
 
     #
     # Notebook for Jenkins and HTML publication
@@ -207,8 +205,6 @@ def write_BepiColombo(config):
 
 
 def write_MarsExpress(config):
-
-    root_dir = os.path.dirname(__file__)
 
     repo = git.Repo(config['skd_path'][:-7])
     tags = repo.tags
@@ -260,7 +256,7 @@ def write_MarsExpress(config):
     replacements['start_time'] = start_time
     replacements['finish_time'] = finish_time
 
-    template = root_dir + '/notebooks/MARS-EXPRESS.ipynb'
+    template = config['root_dir'] + '/notebooks/MARS-EXPRESS.ipynb'
 
     #
     # Notebook for Jenkins and HTML publication
