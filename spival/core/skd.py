@@ -341,6 +341,7 @@ def update_html(config):
     em16_in_dir = list(reversed(glob.glob('ExoMars2016_*.html')))
     bc_in_dir = list(reversed(glob.glob('BEPICOLOMBO_*.html')))
     mex_in_dir = list(reversed( glob.glob('MARS-EXPRESS_*.html')))
+    adcsng_in_dir =  list(reversed( glob.glob('adcsng_v*.html')))
     root_dir = config['root_dir']
 
     source = os.listdir(root_dir+'/images/')
@@ -349,6 +350,7 @@ def update_html(config):
 
 
     shutil.copy(root_dir+'/templates/index.html',config['index_path'])
+    shutil.copy(root_dir+'/templates/spival.html',config['index_path'])
 
     with open('index_former.html', 'w+') as f:
         with open(root_dir+'/templates/index_former.html', 'r') as template:
@@ -367,7 +369,23 @@ def update_html(config):
                             f.write('<p><a href="http://spice.esac.esa.int/status/{}">{}</a></p>'.format(html,html.split('.')[0]))
                 else:
                     f.write(line)
+
+    with open('index_adcsng_former.html', 'w+') as f:
+        with open(root_dir + '/templates/index_adcsng_former.html', 'r') as template:
+            for line in template:
+                if '{adcsng}' in line:
+                    if adcsng_in_dir:
+                        for html in adcsng_in_dir:
+                            f.write(
+                                '<p><a href="http://spice.esac.esa.int/status/{}">{}</a></p>'.format(
+                                    html, html.split('.')[0]))
+                else:
+                    f.write(line)
+
+
     os.chdir(cwd)
+
+
 
 
     return
