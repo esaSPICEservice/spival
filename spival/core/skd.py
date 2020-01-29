@@ -378,7 +378,7 @@ def update_html(config):
                         for html in adcsng_in_dir:
                             f.write(
                                 '<p><a href="http://spice.esac.esa.int/status/{}">{}</a></p>'.format(
-                                    html, html.split('.html')[0]))
+                                    html, html))
                 else:
                     f.write(line)
 
