@@ -105,7 +105,7 @@ def main(config=False, debug=False, log=False, mission=False):
             print(type(target_frame))
         else:
             target_frame = 'J2000'
-        print(coverage.gaps(mk, args.object_frame, target_frame=target_frame))
+        print(coverage.gaps(args.object_frame, target_frame=target_frame, mk=mk))
         return
 
     if args.gaps != 'stdout':

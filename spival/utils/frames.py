@@ -124,5 +124,6 @@ def check(mk, time=False, report=False):
     return
 
 if __name__ == '__main__':
-    mk = '/Users/mcosta/SPICE/BEPICOLOMBO/kernels/mk/bc_ops_local.tm'
-    check(mk, report=True)
+    mk = '/Users/mcosta/PDS3_vex_review/ARCGEN_OUTPUT/EXTRAS/MK/VEX_V01.TM'
+    check(mk, report=True, time='2010-09-21T18:01:45')
+
