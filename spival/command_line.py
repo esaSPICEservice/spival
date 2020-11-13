@@ -93,7 +93,7 @@ def main(config=False, debug=False, log=False, mission=False):
     if args.time: time = args.time
     if args.gaps: gaps = args.gaps
     if not args and args.config: config = args.config
-    else: time = False
+    if not args.time: time = False
 
     if args.frames:
         frames.check(mk, time, args.report_frames)
