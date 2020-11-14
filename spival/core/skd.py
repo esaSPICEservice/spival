@@ -137,7 +137,7 @@ def write_BepiColombo(config):
         #
         # We obtain the predicted and the measured CKs
         #
-    replacements['predicted_ck'] = get_latest_kernel('ck',config['skd_path'],'bc_mpo_sc_fsp_00*_f????????_v??.bc')
+    replacements['predicted_ck'] = get_latest_kernel('ck',config['skd_path'],'bc_mpo_sc_fsp_00*.bc')
     replacements['measured_ck'] = get_latest_kernel('ck', config['skd_path'],'bc_mpo_sc_scm_*_s????????_v??.bc')
 
         #
