@@ -139,6 +139,7 @@ def write_BepiColombo(config):
         #
     replacements['predicted_ck'] = get_latest_kernel('ck',config['skd_path'],'bc_mpo_sc_fsp_00*.bc')
     replacements['measured_ck'] = get_latest_kernel('ck', config['skd_path'],'bc_mpo_sc_scm_*_s????????_v??.bc')
+    replacements['reconstructed_spk'] = get_latest_kernel('spk', config['skd_path'], 'bc_mpo_fcp_0*_v??.bsp')
 
         #
         # We obtain today's date
