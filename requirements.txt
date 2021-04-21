@@ -1,0 +1,8 @@
+spival~=2.0.0
+spiops~=0.5.0
+spiceypy~=3.1.1
+numpy~=1.19.4
+gnuplotlib~=0.38
+matplotlib~=3.3.2
+ipython~=7.18.1
+setuptools~=50.3.0
