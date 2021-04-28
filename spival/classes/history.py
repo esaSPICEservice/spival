@@ -82,6 +82,7 @@ class TestHistory:
         html += "   </table>\n"
         html += "</div>\n"
 
+        """
         if move_to_top:
             #
             # Inserts Javascript and JQuery in the HTML page in order to obtain the validation
@@ -102,6 +103,7 @@ class TestHistory:
                     '   containerDiv.children().last().html(val_results);\n' \
                     '   containerDiv.insertAfter(header);\n' \
                     '</script>\n'
+        """
 
         display(HTML(html))
 

@@ -1,4 +1,5 @@
 from os import remove, path
+import bs4
 
 def kernel_extension2type(kernel_extension):
     kernel_type_map = {
@@ -90,3 +91,41 @@ def fill_template(template,
                        #
    if path.isfile('fill_template.temp'):
        remove('fill_template.temp')
+
+
+def post_process_html(html_file):
+
+    if not path.isfile(html_file):
+        print("Invalid file: " + html_file)
+        return
+
+    print("Post-processing file: " + html_file)
+
+    # load the file
+    with open(html_file) as inf:
+        txt = inf.read()
+        soup = bs4.BeautifulSoup(txt, "html.parser")
+
+    # Move validation results to top of the page
+    val_res_div = soup.find(id="validation_results""")
+    if not val_res_div:
+        print("Div with id='validation_results' not found!")
+        return
+
+    first_p = soup.find("p")
+    if not first_p:
+        print("Cannot find the first 'p' to use for insertAfter!")
+        return
+
+    first_p.append(val_res_div)
+
+    # save the file again
+    with open(html_file, "w") as outf:
+        outf.write(str(soup))
+
+    # Generate a new html file with only the validation results
+    soup2 = bs4.BeautifulSoup("", "html.parser")
+    soup2.append(val_res_div)
+    with open(html_file.replace(".html", "_results.html"), "w") as outf:
+        outf.write(str(soup2))
+

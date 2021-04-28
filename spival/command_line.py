@@ -5,6 +5,7 @@ import os
 import json
 import textwrap
 import traceback
+import glob
 
 
 from argparse import ArgumentParser, RawDescriptionHelpFormatter
@@ -15,6 +16,7 @@ from spival.core.skd import write_BepiColombo
 from spival.core.skd import write_MarsExpress
 from spival.utils import frames
 from spival.utils import coverage
+from spival.utils import utils
 
 
 def main(config=False, debug=False, log=False, mission=False):
@@ -83,10 +85,19 @@ def main(config=False, debug=False, log=False, mission=False):
     parser.add_argument('-cf', '--config',
                         help='Configuration to run full pipeline for a project',
                         default='stdout')
+    parser.add_argument('-pp', '--postprocessing',
+                        help='Runs post-processing actions over exported Jupyter Notebooks to HTML',
+                        default='stdout')
     args = parser.parse_args()
 
     if args.version:
         print(version)
+        return
+
+    if args.postprocessing != 'stdout':
+        html_files = glob.glob(args.postprocessing)
+        for html_file in html_files:
+            utils.post_process_html(html_file)
         return
 
     if args.metakernel: mk = args.metakernel
