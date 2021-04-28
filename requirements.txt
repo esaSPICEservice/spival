@@ -6,3 +6,5 @@ gnuplotlib~=0.38
 matplotlib~=3.3.2
 ipython~=7.18.1
 setuptools~=50.3.0
+bs4~=0.0.1
+beautifulsoup4~=4.9.3
