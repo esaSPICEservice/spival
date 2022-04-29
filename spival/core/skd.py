@@ -134,16 +134,16 @@ def write_BepiColombo(config):
             else:
                 replacements['skd_version'] = 'N/A'
 
-        #
-        # We obtain the predicted and the measured CKs
-        #
-    replacements['predicted_ck'] = get_latest_kernel('ck',config['skd_path'],'bc_mpo_sc_fsp_00*.bc')
-    replacements['measured_ck'] = get_latest_kernel('ck', config['skd_path'],'bc_mpo_sc_scm_*_s????????_v??.bc')
+    #
+    # We obtain the predicted and the measured CKs
+    #
+    replacements['predicted_ck'] = get_latest_kernel('ck', config['skd_path'], 'bc_mpo_sc_fcp_00*.bc')
+    replacements['measured_ck'] = get_latest_kernel('ck', config['skd_path'], 'bc_mpo_sc_scm_*_s????????_v??.bc')
     replacements['reconstructed_spk'] = get_latest_kernel('spk', config['skd_path'], 'bc_mpo_fcp_0*_v??.bsp')
 
-        #
-        # We obtain today's date
-        #
+    #
+    # We obtain today's date
+    #
     now = datetime.datetime.now()
     replacements['current_time'] = now.strftime("%Y-%m-%dT%H:%M:%S")
 
