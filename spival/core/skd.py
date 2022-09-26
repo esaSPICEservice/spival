@@ -134,16 +134,16 @@ def write_BepiColombo(config):
             else:
                 replacements['skd_version'] = 'N/A'
 
-    #
-    # We obtain the predicted and the measured CKs
-    #
-    replacements['predicted_ck'] = get_latest_kernel('ck', config['skd_path'], 'bc_mpo_sc_fcp_00*.bc')
-    replacements['measured_ck'] = get_latest_kernel('ck', config['skd_path'], 'bc_mpo_sc_scm_*_s????????_v??.bc')
+        #
+        # We obtain the predicted and the measured CKs
+        #
+    replacements['predicted_ck'] = get_latest_kernel('ck',config['skd_path'],'bc_mpo_sc_fcp_00*.bc')
+    replacements['measured_ck'] = get_latest_kernel('ck', config['skd_path'],'bc_mpo_sc_scm_*_s????????_v??.bc')
     replacements['reconstructed_spk'] = get_latest_kernel('spk', config['skd_path'], 'bc_mpo_fcp_0*_v??.bsp')
 
-    #
-    # We obtain today's date
-    #
+        #
+        # We obtain today's date
+        #
     now = datetime.datetime.now()
     replacements['current_time'] = now.strftime("%Y-%m-%dT%H:%M:%S")
 
@@ -184,6 +184,100 @@ def write_BepiColombo(config):
     # Notebook for Jenkins and HTML publication
     #
     output = 'BEPICOLOMBO_' + replacements['skd_version'] + '.ipynb'
+    replacements['skd_path'] = config['skd_path']
+    fill_template(template, output, replacements)
+    shutil.move(output, os.path.join(config['notebooks_path'],output))
+
+    #
+    # Notebook for the GitHub Laboratory
+    #
+    output = 'index.ipynb'
+    replacements['metakernel'] = config['github_skd_path'] + '/mk/' + config['mk']
+    replacements['skd_path'] = config['github_skd_path']
+    fill_template(template, output, replacements)
+    shutil.move(output, os.path.join(config['notebooks_path'],output))
+
+    #
+    # Update the HTMLs
+    #
+    update_html(config)
+
+    return
+
+
+def write_JUICE(config):
+
+    repo = git.Repo(config['skd_path'][:-7])
+    tags = repo.tags
+
+    #
+    # Set the replacements for the Notebook template
+    #
+    replacements = {}
+    replacements['metakernel'] = config['skd_path']+ '/mk/' + config['mk']
+
+
+    spiops.load(replacements['metakernel'])
+
+
+    with open(replacements['metakernel'], 'r') as f:
+        for line in f:
+            if 'SKD_VERSION' in line:
+                replacements['skd_version'] = line.split("'")[1]
+                break
+            else:
+                replacements['skd_version'] = 'N/A'
+
+        #
+        # We obtain the predicted and the measured CKs
+        #
+    replacements['predicted_ck'] = get_latest_kernel('ck',config['skd_path'],'juice_sc_sat_crema_5_0b23_1_default_*.bc')
+    # replacements['measured_ck'] = get_latest_kernel('ck', config['skd_path'],'bc_mpo_sc_scm_*_s????????_v??.bc')
+    replacements['reconstructed_spk'] = get_latest_kernel('spk', config['skd_path'], 'juice_mat_crema_5_0b23_1_*.bsp')
+
+        #
+        # We obtain today's date
+        #
+    now = datetime.datetime.now()
+    replacements['current_time'] = now.strftime("%Y-%m-%dT%H:%M:%S")
+
+    boundary  = spiops.cov_ck_ker(config['skd_path']+ '/ck/' + replacements['predicted_ck'], 'JUICE_SPACECRAFT', time_format='UTC')
+
+    mes_finish_time = boundary[-1][:-4]
+    mes_start_date = datetime.datetime.strptime(mes_finish_time, '%Y-%m-%dT%H:%M:%S')
+    mes_start_date = mes_start_date - datetime.timedelta(days=7)
+    mes_start_time = mes_start_date.strftime("%Y-%m-%dT%H:%M:%S")
+
+    #
+    # We obtain the dates from the Tags
+    #
+    start_date = str(tags[-2]).split('_')[1]
+    start_time = '{}-{}-{}T00:00:00'.format(start_date[0:4],start_date[4:6],start_date[6:8])
+
+    finish_date = str(tags[-1]).split('_')[1]
+    finish_time = '{}-{}-{}T00:00:00'.format(start_date[0:4],start_date[4:6],start_date[6:8])
+
+    index = -2
+    while start_time == finish_time:
+        start_date = str(tags[index]).split('_')[1]
+        start_time = '{}-{}-{}T00:00:00'.format(start_date[0:4],
+                                                start_date[4:6],
+                                                start_date[6:8])
+        index -= 1
+
+
+    replacements['start_time'] = start_time
+    replacements['finish_time'] = finish_time
+
+    replacements['start_time_measured'] = mes_start_time
+    replacements['finish_time_measured'] = mes_finish_time
+
+    template = config['root_dir'] + '/notebooks/JUICE.ipynb'
+
+    #
+    # Notebook for Jenkins and HTML publication
+    #
+    output = 'JUICE' + replacements['skd_version'] + '.ipynb'
     replacements['skd_path'] = config['skd_path']
     fill_template(template, output, replacements)
     shutil.move(output, os.path.join(config['notebooks_path'],output))
@@ -341,6 +435,7 @@ def update_html(config):
     os.chdir(config['index_path'])
     em16_in_dir = list(reversed(glob.glob('ExoMars2016_*.html')))
     bc_in_dir = list(reversed(glob.glob('BEPICOLOMBO_*.html')))
+    juice_in_dir = list(reversed(glob.glob('JUICE_*.html')))
     mex_in_dir = list(reversed( glob.glob('MARS-EXPRESS_*.html')))
     adcsng_in_dir =  list(reversed( glob.glob('adcsng_v*.html')))
     root_dir = config['root_dir']
@@ -363,6 +458,10 @@ def update_html(config):
                 elif '{BepiColombo}' in line:
                     if bc_in_dir:
                         for html in bc_in_dir:
+                            f.write('<p><a href="http://spice.esac.esa.int/status/{}">{}</a></p>'.format(html,html.split('.')[0]))
+                elif '{JUICE}' in line:
+                    if juice_in_dir:
+                        for html in juice_in_dir:
                             f.write('<p><a href="http://spice.esac.esa.int/status/{}">{}</a></p>'.format(html,html.split('.')[0]))
                 elif '{Mars-Express}' in line:
                     if mex_in_dir:

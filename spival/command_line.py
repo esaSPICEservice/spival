@@ -13,6 +13,7 @@ from argparse import ArgumentParser, RawDescriptionHelpFormatter
 from spival.core.skd import check
 from spival.core.skd import write_ExoMars2016
 from spival.core.skd import write_BepiColombo
+from spival.core.skd import write_JUICE
 from spival.core.skd import write_MarsExpress
 from spival.utils import frames
 from spival.utils import coverage
@@ -153,6 +154,8 @@ def main(config=False, debug=False, log=False, mission=False):
                 write_ExoMars2016(config)
             if mission.lower() == 'bepicolombo':
                 write_BepiColombo(config)
+            if mission.lower() == 'juice':
+                write_JUICE(config)
             if mission.lower() == 'mars_express':
                 write_MarsExpress(config)
 
