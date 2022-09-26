@@ -277,7 +277,7 @@ def write_JUICE(config):
     #
     # Notebook for Jenkins and HTML publication
     #
-    output = 'JUICE' + replacements['skd_version'] + '.ipynb'
+    output = 'JUICE_' + replacements['skd_version'] + '.ipynb'
     replacements['skd_path'] = config['skd_path']
     fill_template(template, output, replacements)
     shutil.move(output, os.path.join(config['notebooks_path'],output))
