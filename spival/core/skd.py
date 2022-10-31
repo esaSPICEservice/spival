@@ -216,9 +216,7 @@ def write_JUICE(config):
     replacements = {}
     replacements['metakernel'] = config['skd_path']+ '/mk/' + config['mk']
 
-
     spiops.load(replacements['metakernel'])
-
 
     with open(replacements['metakernel'], 'r') as f:
         for line in f:
@@ -228,20 +226,20 @@ def write_JUICE(config):
             else:
                 replacements['skd_version'] = 'N/A'
 
-        #
-        # We obtain the predicted and the measured CKs
-        #
-    replacements['predicted_ck'] = get_latest_kernel('ck',config['skd_path'],'juice_sc_sat_crema_5_0b23_1_default_*.bc')
+    #
+    # We obtain the predicted and the measured CKs
+    #
+    replacements['predicted_ck'] = get_latest_kernel('ck', config['skd_path'], config['predicted_ck'])
     # replacements['measured_ck'] = get_latest_kernel('ck', config['skd_path'],'bc_mpo_sc_scm_*_s????????_v??.bc')
-    replacements['reconstructed_spk'] = get_latest_kernel('spk', config['skd_path'], 'juice_mat_crema_5_0b23_1_*.bsp')
+    replacements['reconstructed_spk'] = get_latest_kernel('spk', config['skd_path'], config['reconstructed_spk'])
 
-        #
-        # We obtain today's date
-        #
+    #
+    # We obtain today's date
+    #
     now = datetime.datetime.now()
     replacements['current_time'] = now.strftime("%Y-%m-%dT%H:%M:%S")
 
-    boundary  = spiops.cov_ck_ker(config['skd_path']+ '/ck/' + replacements['predicted_ck'], 'JUICE_SPACECRAFT', time_format='UTC')
+    boundary = spiops.cov_ck_ker(config['skd_path'] + '/ck/' + replacements['predicted_ck'], 'JUICE_SPACECRAFT_PLAN', time_format='UTC')
 
     mes_finish_time = boundary[-1][:-4]
     mes_start_date = datetime.datetime.strptime(mes_finish_time, '%Y-%m-%dT%H:%M:%S')
@@ -264,7 +262,6 @@ def write_JUICE(config):
                                                 start_date[4:6],
                                                 start_date[6:8])
         index -= 1
-
 
     replacements['start_time'] = start_time
     replacements['finish_time'] = finish_time
@@ -289,7 +286,7 @@ def write_JUICE(config):
     replacements['metakernel'] = config['github_skd_path'] + '/mk/' + config['mk']
     replacements['skd_path'] = config['github_skd_path']
     fill_template(template, output, replacements)
-    shutil.move(output, os.path.join(config['notebooks_path'],output))
+    shutil.move(output, os.path.join(config['notebooks_path'], output))
 
     #
     # Update the HTMLs
