@@ -8,5 +8,8 @@
   "index_path":"/home/rvalles/spice/spival/spival/tests/html",
   "mk":"juice_crema_5_1_150lb_local.tm",
   "predicted_ck": "juice_sc_crema_5_1_150lb_default_*.bc",
-  "reconstructed_spk": "juice_crema_5_1_150lb_*.bsp"
+  "reconstructed_spk": "juice_crema_5_1_150lb_*.bsp",
+  "check_full_coverage": true,
+  "coverage_margin": 300,
+  "samples": 100000
 }

@@ -1,6 +1,7 @@
 #!/usr/bin/env python3
 
 import glob
+import math
 import os
 import datetime
 import shutil
@@ -242,32 +243,40 @@ def write_JUICE(config):
     boundary = spiops.cov_ck_ker(config['skd_path'] + '/ck/' + replacements['predicted_ck'], 'JUICE_SPACECRAFT_PLAN', time_format='UTC')
 
     mes_finish_time = boundary[-1][:-4]
-    mes_start_date = datetime.datetime.strptime(mes_finish_time, '%Y-%m-%dT%H:%M:%S')
-    mes_start_date = mes_start_date - datetime.timedelta(days=7)
-    mes_start_time = mes_start_date.strftime("%Y-%m-%dT%H:%M:%S")
 
-    #
-    # We obtain the dates from the Tags
-    #
-    start_date = str(tags[-2]).split('_')[1]
-    start_time = '{}-{}-{}T00:00:00'.format(start_date[0:4],start_date[4:6],start_date[6:8])
+    if "check_full_coverage" in config and config["check_full_coverage"] is True:
+        # Check the full predicted_ck coverage
+        mes_start_time = boundary[0][:-4]
+        replacements['XM-C1_description'] = "The metakernel is loaded, the scenario covers the full coverage of the latest Predicted Attitude Kernel."
 
-    finish_date = str(tags[-1]).split('_')[1]
-    finish_time = '{}-{}-{}T00:00:00'.format(start_date[0:4],start_date[4:6],start_date[6:8])
+        if "coverage_margin" in config:
+            mes_start_time = datetime.datetime.strptime(mes_start_time, '%Y-%m-%dT%H:%M:%S')
+            mes_start_time = mes_start_time + datetime.timedelta(seconds=config["coverage_margin"])
+            mes_start_time = mes_start_time.strftime("%Y-%m-%dT%H:%M:%S")
 
-    index = -2
-    while start_time == finish_time:
-        start_date = str(tags[index]).split('_')[1]
-        start_time = '{}-{}-{}T00:00:00'.format(start_date[0:4],
-                                                start_date[4:6],
-                                                start_date[6:8])
-        index -= 1
+            mes_finish_time = datetime.datetime.strptime(mes_finish_time, '%Y-%m-%dT%H:%M:%S')
+            mes_finish_time = mes_finish_time - datetime.timedelta(seconds=config["coverage_margin"])
+            mes_finish_time = mes_finish_time.strftime("%Y-%m-%dT%H:%M:%S")
 
-    replacements['start_time'] = start_time
-    replacements['finish_time'] = finish_time
+            replacements['XM-C1_description'] = "The metakernel is loaded, the scenario covers the full coverage of the latest Predicted Attitude Kernel with a margin of " + str(config["coverage_margin"]) + " seconds."
+
+    else:
+        # Check only last week
+        mes_start_date = datetime.datetime.strptime(mes_finish_time, '%Y-%m-%dT%H:%M:%S')
+        mes_start_date = mes_start_date - datetime.timedelta(days=7)
+        mes_start_time = mes_start_date.strftime("%Y-%m-%dT%H:%M:%S")
+
+        replacements['XM-C1_description'] = "The metakernel is loaded, the scenario covers a week with a finish time set by the end of coverage of the latest Predicted Attitude Kernel."
 
     replacements['start_time_measured'] = mes_start_time
     replacements['finish_time_measured'] = mes_finish_time
+
+    if "samples" in config:
+        start_date = datetime.datetime.strptime(mes_start_time, '%Y-%m-%dT%H:%M:%S')
+        end_date = datetime.datetime.strptime(mes_finish_time, '%Y-%m-%dT%H:%M:%S')
+        replacements['resolution'] = str(math.ceil((end_date - start_date).total_seconds() / config['samples']))
+    else:
+        replacements['resolution'] = "60"
 
     template = config['root_dir'] + '/notebooks/JUICE.ipynb'
 
@@ -277,7 +286,7 @@ def write_JUICE(config):
     output = 'JUICE_' + replacements['skd_version'] + '.ipynb'
     replacements['skd_path'] = config['skd_path']
     fill_template(template, output, replacements)
-    shutil.move(output, os.path.join(config['notebooks_path'],output))
+    shutil.move(output, os.path.join(config['notebooks_path'], output))
 
     #
     # Notebook for the GitHub Laboratory
