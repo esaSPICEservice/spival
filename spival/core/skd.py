@@ -6,14 +6,12 @@ import os
 import datetime
 import shutil
 import git
-import platform
-
-import spival
 
 from spiops import spiops
 from spiops.utils.utils import get_latest_kernel
-
+from spival.core.skd_validator import validate_files
 from spival.utils.utils import fill_template
+
 
 def write_ExoMars2016(config):
 
@@ -434,6 +432,23 @@ def check(dir=False):
     os.chdir(cwd)
 
     return
+
+
+def validate(path_arr=[]):
+
+    files = []
+    for path in path_arr:
+        if not os.path.exists(path):
+            raise Exception("Path doesn't exists: " + str(path))
+
+        if os.path.isfile(path):
+            files.append(path)
+
+        elif os.path.isdir(path):
+            files.extend(list(glob.iglob(path + '/**/*', recursive=True)))
+
+    return validate_files(files)
+
 
 def update_html(config):
 

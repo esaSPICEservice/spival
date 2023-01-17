@@ -1,16 +1,14 @@
 #!/usr/bin/env python3
 
-
 import os
 import json
 import textwrap
 import traceback
 import glob
 
-
 from argparse import ArgumentParser, RawDescriptionHelpFormatter
 
-from spival.core.skd import check
+from spival.core.skd import check, validate
 from spival.core.skd import write_ExoMars2016
 from spival.core.skd import write_BepiColombo
 from spival.core.skd import write_JUICE
@@ -24,8 +22,7 @@ def main(config=False, debug=False, log=False, mission=False):
 
     execution_dir = os.getcwd()
 
-    with open(os.path.dirname(__file__) + '/config/version',
-              'r') as f:
+    with open(os.path.dirname(__file__) + '/config/version', 'r') as f:
         for line in f:
             version = line
 
@@ -56,6 +53,10 @@ def main(config=False, debug=False, log=False, mission=False):
     parser.add_argument('-v', '--version',
                         help='Display the version of SPIVAL',
                         action='store_true')
+    parser.add_argument('-val', '--validate',
+                        help='Validates a file or directory. Could be set multiple times for validate several files. '
+                             'e.g: -val file1 -val directory1',
+                        action='append')
     parser.add_argument('-ch', '--check',
                         help='Quick check on the current directory',
                         action='store_true')
@@ -130,6 +131,9 @@ def main(config=False, debug=False, log=False, mission=False):
 
     if args.check:
         return check()
+
+    if args.validate is not None:
+        return validate(args.validate)
 
     if args.config != 'stdout':
         config = args.config
