@@ -7,12 +7,9 @@ import fileinput
 import glob
 import re
 import logging
-import json
 import subprocess
 from datetime import datetime
 
-from os import listdir
-from os.path import isfile, join
 from shutil import move, copyfile
 from tempfile import mkstemp
 
@@ -260,46 +257,6 @@ def get_latest_kernel(kernel_type, path, pattern, dates=False,
         return kernels_date
 
 
-def get_increment_kernels(mission, files_list):
-    #
-    # copy missing files from previous increment
-    #
-    if mission.pds == '3' and mission.increment:
-        logging.info("Copying missing files from previous increment...")
-        incr_dir = mission.increment + '/DATA/'
-        incr_kernel_directory_list = listdir(incr_dir)
-        for directory in incr_kernel_directory_list:
-            dir = incr_dir + directory
-            incr_files = [join(dir, f) for f in listdir(dir) if isfile(join(dir, f))]
-            for incr_file in incr_files:
-                incr_file = incr_file.split('/')[-1]
-                if not incr_file in files_list:
-                    src = incr_dir + directory + '/' + incr_file
-                    dst_dir = mission.bundle_directory + '/DATA/' + directory
-                    if not os.path.isdir(dst_dir):
-                        os.mkdir(dst_dir)
-                    dst = dst_dir + '/' + incr_file
-                    if not incr_file.lower().endswith(".lbl"):
-                        logging.info("      Copying: " + directory + '/' + incr_file)
-                    copyfile(src, dst)
-
-        # Copy ORBNUM files if any
-        orbdir = mission.bundle_directory + '/EXTRAS/ORBNUM/'
-        incr_orbdir = mission.increment + '/EXTRAS/ORBNUM/'
-        if os.path.isdir(incr_orbdir):
-            files = [join(orbdir, f) for f in listdir(orbdir) if isfile(join(orbdir, f))]
-            incr_files = [join(incr_orbdir, f) for f in listdir(incr_orbdir) if isfile(join(incr_orbdir, f))]
-            for incr_file in incr_files:
-                if incr_file not in files:
-                    src = incr_orbdir + incr_file.split('/')[-1]
-                    dst = orbdir + incr_file.split('/')[-1]
-                    if not os.path.isdir(orbdir):
-                        os.mkdir(orbdir)
-                    logging.info("Copying: " + src)
-                    copyfile(src, dst)
-    return
-
-
 def extension2type(kernel):
 
     kernel_type_map = {
@@ -334,7 +291,6 @@ def extension2type(kernel):
 def type2extension(kernel_type):
 
     kernel_type = kernel_type.upper()
-
 
     kernel_type_map = {
         "IK": ["ti"],
@@ -410,115 +366,6 @@ def add_carriage_return(line):
     return line
 
 
-def get_skd_spacecrafts(mission):
-
-    sc = ['{}'.format(mission.spacecraft)]
-
-    sec_scs = mission.secondary_spacecrafts.split(',')
-    if not isinstance(sec_scs, list):
-        sec_scs = [sec_scs]
-
-    scs = sc + sec_scs
-
-    sc_list_for_label = ''
-
-    context_products = mission.context_products
-
-    for sc in scs:
-        if sc:
-            sc_name = sc.split(',')[0].strip()
-            for product in context_products:
-                if product['name'][0].upper() == sc_name.upper():
-                    sc_lid = product['lidvid'].split('::')[0]
-
-            sc_list_for_label += \
-            '            <Observing_System_Component>\r\n' + \
-           f'                <name>{sc_name}</name>\r\n' + \
-            '                <type>Spacecraft</type>\r\n' + \
-            '                <Internal_Reference>\r\n' + \
-           f'                    <lid_reference>{sc_lid}</lid_reference>\r\n' + \
-            '                    <reference_type>is_instrument_host</reference_type>\r\n' + \
-            '                </Internal_Reference>\r\n' + \
-            '            </Observing_System_Component>\r\n'
-
-    sc_list_for_label = sc_list_for_label.rstrip() + '\r\n'
-
-    return sc_list_for_label
-
-
-def get_skd_targets(mission, target_reference_type):
-
-    tar = [mission.target]
-
-    sec_tar = mission.secondary_targets.split(',')
-    if not isinstance(sec_tar, list):
-        sec_tar = [sec_tar]
-
-    tars = tar + sec_tar
-
-    tar_list_for_label = ''
-
-    context_products = mission.context_products
-
-    for tar in tars:
-        if tar:
-
-            target_name = tar
-            for product in context_products:
-                if product['name'][0].upper() == target_name.upper():
-                    target_lid = product['lidvid'].split('::')[0]
-                    target_type = product['type'][0].capitalize()
-
-            tar_list_for_label += \
-            '        <Target_Identification>\r\n' + \
-           f'            <name>{target_name}</name>\r\n' + \
-           f'            <type>{target_type}</type>\r\n' + \
-            '            <Internal_Reference>\r\n' + \
-           f'                <lid_reference>{target_lid}</lid_reference>\r\n' + \
-           f'                <reference_type>{target_reference_type}</reference_type>\r\n' + \
-            '            </Internal_Reference>\r\n' + \
-            '        </Target_Identification>\r\n'
-
-    tar_list_for_label = tar_list_for_label.rstrip() + '\r\n'
-
-    return tar_list_for_label
-
-
-def get_context_products(mission):
-
-    registered_context_products_file = f'{mission.root_dir}/config/registered_context_products.json'
-    with open(registered_context_products_file, 'r') as f:
-              context_products = json.load(f)['Product_Context']
-
-    local_context_products_file = f'{mission.root_dir}/config/{mission.accronym}_context_products.json'
-    with open(local_context_products_file, 'r') as f:
-              context_products += json.load(f)['Product_Context']
-
-    return context_products
-
-
-def get_spacecraft_text(mission):
-
-    # Define PDS4_SPACECRAFT_TEXT
-    # Usually this text shall be:
-    # "Contains the SPICE System kernel files for the TGO spacecraft, its instruments and targets."
-    # But for missions with many spacecrafts shall be:
-    # "Contains the SPICE System kernel files for the MPO, MMO and MTM spacecrafts, their instruments and targets."
-    # Note that templates are defined as: "files for the $PDS4_SPACECRAFT_TEXT instruments and targets."
-
-    spacecraft_text = mission.spacecraft
-
-    if len(mission.secondary_spacecrafts):
-        sec_scs = mission.secondary_spacecrafts.split(",")
-        for i in range(len(sec_scs)):
-            spacecraft_text += (", " if (i < len(sec_scs) - 1) else " and ") + sec_scs[i].strip()
-        spacecraft_text += " spacecrafts, their"
-    else:
-        spacecraft_text += " spacecraft and its"
-
-    return spacecraft_text
-
-
 def is_empty_file(file):
     return os.stat(file).st_size == 0
 
@@ -532,12 +379,14 @@ def has_badchars(file_path):
         for i in range(0, len(line), 1):
             e = line[i]
             if (re.sub('[ -~]', '', e)) != "" and e != '\n':
-                print('ERROR!! - NON ASCII CHAR: \'' + e + '\' detected in file: ' + file_path + " at line: " + str(linen))
+                print('ERROR!! - NON ASCII CHAR: \'' + e + '\' detected in file: ' + file_path
+                      + " at line: " + str(linen))
                 badchars_detected = True
 
         for bad_char_keyword in BAD_CHAR_KEYWORDS:
             if bad_char_keyword in line:
-                print('ERROR!! - BAD_CHAR_KEYWORD found: \'' + bad_char_keyword + '\' detected in file: ' + file_path + " at line: " + str(linen))
+                print('ERROR!! - BAD_CHAR_KEYWORD found: \'' + bad_char_keyword + '\' detected in file: '
+                      + file_path + " at line: " + str(linen))
                 badchars_detected = True
 
     file.close()
@@ -591,7 +440,8 @@ def validate_trailing_chars(file):
         line = f[i].replace('\n', '')
         trailing_chars = len(line) - len(line.rstrip())
         if trailing_chars > 0:
-            print('WARNING!! - Found ' + str(trailing_chars) + ' trailing char at Line nr: ' + str(linen) + ' in file ' + file)
+            print('WARNING!! - Found ' + str(trailing_chars) + ' trailing char at Line nr: '
+                  + str(linen) + ' in file ' + file)
             print("'" + line + "'")
             has_trailing_chars = True
 
@@ -828,13 +678,14 @@ def get_section_text_from_kernel_comments(kernel_path, section_name, directories
 
             if inside_section:
 
-                if line.startswith("----"):
+                if line.startswith("----") or line.startswith("===="):
                     break
 
-                if not previous_line.startswith("----"):
+                if not (previous_line.startswith("----") or previous_line.startswith("====")):
                     section_text += previous_line + "\n"
 
-            elif previous_line.startswith(section_name) and line.startswith("----"):
+            elif previous_line.startswith(section_name) \
+                    and (line.startswith("----") or line.startswith("====")):
                 inside_section = True
 
             previous_line = line
@@ -856,8 +707,429 @@ def get_kernel_version(kernel_path):
     else:
         version_format = '{:02d}'
 
-    extension = str(os.path.splitext(kernel_path)[1]).lower()
-    if extension2type(extension) == 'mk':
+    filename, extension = os.path.splitext(kernel_path)
+    if extension2type(extension.lower()) == 'mk':
         version_format = '{:03d}'
 
-    return version_format.format(int(kernel_path.split('.')[0][-2:]))
+    return version_format.format(int(filename[-2:]))
+
+
+def files_are_equal(file1, file2):
+    return md5(file1) == md5(file2)
+
+
+def get_data_text_from_text_kernel(kernel_path):
+
+    # First check if is a text kernel
+    name, extension = os.path.splitext(kernel_path)
+    if not str(extension).lower().startswith(".t"):
+        raise Exception("Wrong text kernel extension: " + kernel_path)
+
+    # Is a text kernel, just read the file:
+    text = read_all_text(kernel_path)
+
+    inside_data_section = False
+    data_text = ""
+    comments = ""
+    line_nr = 0
+
+    for line in text.splitlines():
+
+        striped_line = line.strip()
+
+        if striped_line == '\\begintext':
+            if inside_data_section:
+                inside_data_section = False
+            else:
+                raise Exception("Found '\\begintext' without previous \\begindata at:  "
+                                + kernel_path + " on line: " + str(line_nr))
+
+        elif striped_line == '\\begindata':
+            if not inside_data_section:
+                inside_data_section = True
+            else:
+                raise Exception("Found '\\begindata' without previous \\begintext at:  "
+                                + kernel_path + " on line: " + str(line_nr))
+
+        elif inside_data_section:
+            data_text += line + "\n"
+
+        else:
+            comments += line + "\n"
+
+        line_nr += 1
+
+    return data_text, comments
+
+
+def get_sections_map_from_kernel_comments(kernel_comments):
+    try:
+
+        kernel_comments = kernel_comments.splitlines()
+
+        sections_map = {}
+        section_text = ""
+        section_name = ""
+        previous_line = ""
+
+        for line in kernel_comments:
+
+            if len(previous_line) > 0 \
+                    and (line.startswith("----") or line.startswith("====")):
+
+                # We have started a new section, store previous section and start new one
+                if len(section_name) > 0:
+                    sections_map[section_name] = section_text
+
+                section_name = previous_line.strip()
+                section_text = previous_line + "\n" + line + "\n"
+
+            else:
+                section_text += previous_line + "\n"
+
+            previous_line = line
+
+        if len(section_name) > 0:
+            sections_map[section_name] = section_text
+
+        return sections_map
+
+    except Exception as ex:
+        logging.error('Error on get_sections_map_from_kernel_comments:', ex)
+        return None
+
+
+def matches_string(input_str, match_patter):
+    # NOTE:
+    # match_patter string could have one of the following syntax's:
+    # @SW@text -> Checks input_str starts with text
+    # @EW@text -> Checks input_str ends with text
+    # @IN@text -> Checks input_str contains text
+    # text -> Checks input_str is equal to text
+
+    match_patter = str(match_patter)
+    if match_patter.startswith("@SW@"):
+        return input_str.startswith(match_patter.replace("@SW@", ""))
+    elif match_patter.startswith("@EW@"):
+        return input_str.endswith(match_patter.replace("@EW@", ""))
+    elif match_patter.startswith("@IN@"):
+        return match_patter.replace("@IN@", "") in input_str
+
+    return match_patter == input_str
+
+
+def get_section_from_sections_map(section_pattern, sections_map):
+
+    for section_name in sections_map:
+        if matches_string(section_name, section_pattern):
+            return section_name, sections_map[section_name]
+
+    return None, None
+
+
+def get_naif_ids_from_text(text):
+    naif_ids = {}
+
+    naif_code_line = ""
+    naif_name_line = ""
+
+    for line in text.splitlines():
+        if "NAIF_BODY_CODE" in line:
+            if len(naif_code_line):
+                raise Exception("Consecutive NAIF_BODY_CODE lines found: '" + naif_code_line + "' and '" + line + "'")
+            naif_code_line = line
+
+        if "NAIF_BODY_NAME" in line:
+            if len(naif_name_line):
+                raise Exception("Consecutive NAIF_BODY_NAME lines found: '" + naif_name_line + "' and '" + line + "'")
+            naif_name_line = line
+
+        if len(naif_code_line) and len(naif_name_line):
+
+            body_name_parts = naif_name_line.split("'")
+            if len(body_name_parts) != 3 \
+                    or "=" not in naif_name_line:
+                raise Exception("Wrong NAIF_BODY_NAME line format: " + naif_name_line)
+
+            if "=" not in naif_code_line \
+                    or len(naif_code_line.split("=")) != 2:
+                raise Exception("Wrong NAIF_BODY_CODE line format: " + naif_code_line)
+
+            try:
+                body_name = naif_name_line.split("'")[1].strip()
+                naif_id = int(naif_code_line.split("=")[1].replace("(", "").replace(")", "").strip())
+            except Exception as ex:
+                raise Exception("Wrong NAIF Association lines format: '"
+                                + naif_code_line + "' and '" + naif_name_line + "' , ex: " + str(ex))
+
+            if naif_id not in naif_ids:
+                naif_ids[naif_id] = {"id": naif_id, "name": body_name, "synonyms": [body_name]}
+            else:
+                if body_name not in naif_ids[naif_id]["synonyms"]:
+                    naif_ids[naif_id]["synonyms"].append(body_name)
+                    naif_ids[naif_id]["name"] = body_name
+                else:
+                    raise Exception("Duplicated NAIF_BODY_NAME at line: " + naif_name_line)
+
+            naif_code_line = ""
+            naif_name_line = ""
+
+    return naif_ids
+
+
+def get_naif_ids_from_text_with_tables(text):
+
+    """
+        # TODO: CONTINUE IMPLEMENTATION, For the moment only works with tables of type, and with no empty lines.
+
+       ---------------------  -------  --------------------------
+       Name                   ID       Synonyms
+      ---------------------  -------  --------------------------
+       MPO                      -121   BEPICOLOMBO MPO,
+                                       MERCURY PLANETARY ORBITER
+       MPO_SPACECRAFT        -121000   MPO_SC
+       MPO_SA                -121012
+
+    """
+
+    naif_ids = {}
+
+    last_naif_id = None
+    inside_table = False
+    has_synonyms_column = False
+    synonyms_column_index = -1
+    previous_line = ""
+    original_prev_line = ""
+    for line in text.splitlines():
+
+        original_line = line
+        line = line.strip()
+
+        if line.startswith("--------") and previous_line.lower().startswith("name"):
+
+            prev_line_parts = previous_line.split()
+            if len(prev_line_parts) > 1 \
+                    and prev_line_parts[0].lower() == "name" \
+                    and prev_line_parts[1].lower() == "id":
+                inside_table = True
+
+                if len(prev_line_parts) > 2:
+                    if prev_line_parts[2].lower() == "synonyms":
+                        has_synonyms_column = True
+                        synonyms_column_index = original_prev_line.lower().index("synonyms") - 2  # -2 to give some extra margin if wrong indentation in synonyms
+                    else:
+                        raise Exception("Expected 'Synonyms' as third column of line: " + line)
+                previous_line = line
+                continue
+
+        if inside_table:
+
+            if not len(line) or line.startswith("--------"):
+                inside_table = False
+                previous_line = line
+                continue
+
+            try:
+                if has_synonyms_column and last_naif_id is not None:
+                    num_left_spaces = len(original_line) - len(original_line.lstrip())
+                    if num_left_spaces >= synonyms_column_index:
+                        # We are in a synonyms row
+                        for syn in line.strip().split(","):
+                            naif_ids[last_naif_id]["synonyms"].append(syn)
+                        continue
+
+                line_parts = line.split()
+                body_name = line_parts[0].strip()
+                if "*" in body_name:
+                    # Ignore lines in table with *, such us: MPO_SERENA_ELENA_AN_NN*     -1215NN*
+                    continue
+
+                naif_id = int(line_parts[1].strip())
+
+                synonyms = [body_name]
+                if len(line_parts) > 2:
+                    # We have synonyms
+                    synonyms_text = line.split(str(naif_id))[1].strip()
+                    for syn in synonyms_text.split(","):
+                        synonyms.append(syn)
+
+                naif_ids[naif_id] = {"id": naif_id, "name": body_name, "synonyms": synonyms}
+                last_naif_id = naif_id
+            except:
+                raise Exception("Wrong NAIF ID table row format: " + line)
+
+        previous_line = line
+        original_prev_line = original_line
+
+    return naif_ids
+
+
+def get_frames_definitions_from_text(text):
+    frames = {}
+    frame_name2id = {}
+    last_frame_id = None
+    last_used_id = None
+    curr_var = ""
+    used_id = ""
+    line_nr = 0
+    for line in text.splitlines():
+        if "=" in line:
+            tokens = line.split()
+            curr_var = tokens[0].strip()
+            curr_value = line.split("=")[1].strip()
+
+            if curr_var.startswith("NAIF_") \
+                    or curr_var.startswith("SCLK") \
+                    or curr_var.startswith("OBJECT"):
+                # Name to Id, SCLK or Object association line, ignore them
+                continue
+
+            if not tokens[1] == "=":
+                raise Exception("Wrong line format: " + line)
+
+            frame_id = None
+            try:
+                if curr_var.startswith("BODY"):
+                    frame_id_s = curr_var.replace("BODY", "").split("_")[0]
+                    if frame_id_s.replace("-", "").isnumeric():
+                        # Get frame id from variable name: eg: BODY-28999_POLE_RA
+                        frame_id = int(frame_id_s)
+                        used_id = frame_id_s
+                else:
+                    frame_id_s = curr_var.split("_")[1]
+                    if frame_id_s.replace("-", "").isnumeric():
+                        # Get frame id from variable name: eg: FRAME_-121411_CLASS
+                        frame_id = int(frame_id_s)
+                        used_id = frame_id_s
+                    else:
+                        # Try to get frame id from the value field: Eg: FRAME_MPO_PHEBUS_PB = -121411
+                        frame_id_s = curr_value
+                        if frame_id_s.replace("-", "").isnumeric():
+                            frame_id = int(frame_id_s)
+                            used_id = frame_id_s
+                        else:
+                            # Look for frame name in variable name, Eg: TKFRAME_KIRUNA1_TOPO_UNITS
+                            frame_name = "_".join(curr_var.split("_")[1:-1])
+                            if frame_name in frame_name2id:
+                                frame_id = frame_name2id[frame_name]
+                                used_id = frame_name
+
+            except Exception as ex:
+                raise Exception("Wrong FRAME ID at line: '" + line + "' , ex: " + str(ex))
+
+            if frame_id is None:
+                raise Exception("FRAME ID not valid, at line: '" + line + "'")
+
+            else:
+
+                if frame_id not in frames:
+                    if last_frame_id is not None:
+                        # Remove blank lines at borders
+                        frames[last_frame_id]["frame_definition"] = frames[last_frame_id]["frame_definition"].rstrip()
+
+                    line_nr = 0
+                    frames[frame_id] = {"frame_id": frame_id,
+                                        "frame_definition": "",
+                                        "keywords": {}}
+
+                # Check if is a frame name line
+                frame_var_parts = curr_var.split("_")
+                if len(frame_var_parts) == 3 \
+                        and frame_var_parts[0] == "FRAME" and frame_var_parts[2] == "NAME":
+                    frame_name = curr_value.replace("'", "").strip()
+                    frames[frame_id]["frame_name"] = frame_name
+                    frame_name2id[frame_name] = frame_id
+
+                frames[frame_id]["frame_definition"] += line + "\n"
+
+                keyword = curr_var
+                if keyword.endswith("_NAME"):
+                    keyword = keyword.replace(used_id, "{frame_id}")
+                elif used_id in keyword and len(keyword.split(used_id)[1]):
+                    keyword = keyword.replace(used_id, "{used_id}")
+                else:
+                    keyword = "FRAME_{frame_name}"
+
+                if keyword not in frames[frame_id]["keywords"]:
+
+                    if keyword.endswith("_CLASS"):
+                        frames[frame_id]["frame_class"] = curr_value
+
+                    keyword_data = {
+                                    "keyword": keyword,
+                                    "used_id": used_id,
+                                    "var": curr_var,
+                                    "value": curr_value,
+                                    "line_nr": line_nr,
+                                    "keyword_indent": line.index(curr_var),
+                                    "equal_indent": line.index("="),
+                                    "value_indent": line.replace(curr_var, "#" * len(curr_var)).index(tokens[2]) - (1 if str(tokens[2]).isnumeric() else 0),
+                                    "line": line
+                                    }
+
+                    frames[frame_id]["keywords"][keyword] = keyword_data
+
+                else:
+                    raise Exception("Duplicated keyword: " + curr_var + " at line: '" + line)
+
+                last_frame_id = frame_id
+                last_used_id = used_id
+                line_nr += 1
+
+        elif len(line.strip()):
+            # We could be at matrix definition so, line shall contain numbers and or ")"
+            # It also could be and _ALIGNED_WITH keyword definition, in such case the shall be a string between ''
+            if last_frame_id is not None:
+
+                if curr_var == "TKFRAME_" + str(last_used_id) + "_MATRIX" \
+                        or curr_var == "TKFRAME_" + str(last_used_id) + "_ANGLES" \
+                        or curr_var == "TKFRAME_" + str(last_used_id) + "_Q" \
+                        or curr_var == "TKFRAME_" + str(last_used_id) + "_AXES" \
+                        or (curr_var.startswith("FRAME_" + str(last_used_id) + "_ANGLE_")
+                            and curr_var.endswith("_COEFFS")):
+
+                    # SHALL BE A VECTOR DEFINITION
+                    arr = line.replace(",", " ").replace(")", " ").split()
+                    # If there are tokens, shall be numbers
+                    for elem in arr:
+                        try:
+                            value = float(elem.strip())
+                        except:
+                            raise Exception("Wrong number found: " + elem + "  for TKFRAME_..._MATRIX at line: " + line)
+
+                    if not len(arr) and line.strip() != ")":
+                        # If no tokens found, only ")" is supported
+                        raise Exception("Unexpected line in frame definition: for TKFRAME_..._MATRIX for '"
+                                        + line + "' shall be: ')'")
+
+                elif curr_var == "FRAME_" + str(last_frame_id) + "_ALIGNED_WITH":
+
+                    # SHALL BE AN ALIGNED_WITH
+                    if len(line.split("'")) != 3 and line.strip() != ")":
+                        raise Exception("Unexpected line in frame definition: '" + line +
+                                        "' for FRAME_..._ALIGNED_WITH")
+
+                elif not curr_var.startswith("BODY") \
+                        and not curr_var.startswith("SCLK"):
+                    raise Exception("Unexpected line in frame definition: '" + line + "' " +
+                                    "for frame_id: " + str(last_frame_id))
+
+                frames[last_frame_id]["frame_definition"] += line + "\n"
+
+                keyword = curr_var
+                if last_used_id in keyword and len(keyword.split(used_id)[1]):
+                    keyword = keyword.replace(used_id, "{used_id}")
+                    frames[last_frame_id]["keywords"][keyword]["value"] += line
+
+            else:
+                raise Exception("Unexpected line in frame definition: '" + line + "'")
+
+        elif last_frame_id is not None:
+            # Just un case there are blank lines, link them to the frame_definition for later checks
+            frames[last_frame_id]["frame_definition"] += line + "\n"
+
+    if last_frame_id is not None:
+        # Remove blank lines at borders
+        frames[last_frame_id]["frame_definition"] = frames[last_frame_id]["frame_definition"].rstrip()
+
+    return frames

@@ -1,27 +1,11 @@
-import os
 import fnmatch
+import glob
+import os
 
-from spival.utils.files import exceeds_line_lengths, has_badchars, is_empty_file
-from spival.utils.skd_utils import KERNEL_EXTENSIONS, is_valid_kernel, has_valid_contact_section
-
-IGNORE_FILES = ["earth_??????_*.bpc",
-                "gm_de431.tpc",
-                "pck00010.tpc",
-                "de403_masses.tpc",
-                "earth*.tf",
-                "MANIFEST.in",
-                "README.md",
-                "version"]
-
-SHOW_ALL_FILES = False
-CHECK_LINE_LENGTHS = True
-CHECK_INDENTATION = False
-CHECK_TRAILING_CHARS = False
-
-DOC_EXTENSIONS = [".txt", ".csv", ".xml", ".html"]
-LONG_LINE_EXTENSIONS = [".csv", ".xml", ".html"]
-IGNORE_EXTENSIONS = [".tar", ".obj", ".3ds", ".mtl", ".json", ".png", ".orb", ".gap"]
-CHECK_EXTENSIONS = DOC_EXTENSIONS + KERNEL_EXTENSIONS
+from spival.utils.skd_constants import *
+from spival.utils.files import exceeds_line_lengths, has_badchars, is_empty_file, files_are_equal
+from spival.utils.skd_utils import KERNEL_EXTENSIONS, is_valid_kernel, has_valid_contact_section, get_skd_version, \
+    is_versioned_mk, get_versions_history_from_release_notes_file, check_release_notes_version
 
 
 def is_valid_doc_file(file_path):
@@ -39,7 +23,7 @@ def is_valid_doc_file(file_path):
     filename = str(filename).lower()
     extension = str(extension).lower()
 
-    if CHECK_LINE_LENGTHS and not extension in LONG_LINE_EXTENSIONS:
+    if CHECK_LINE_LENGTHS and extension not in LONG_LINE_EXTENSIONS:
         if exceeds_line_lengths(file_path):
             print("ERROR!! - EXCEEDS LINE LENGTH: " + file_path)
             return False
@@ -48,6 +32,13 @@ def is_valid_doc_file(file_path):
         is_contact_section_mandatory = (filename == "aareadme") or ("_skd_" in filename)
         if not has_valid_contact_section(file_path, is_contact_section_mandatory):
             return False
+
+        if "_skd_" in filename:
+
+            if not check_release_notes_version(file_path):
+                return False
+
+            # TODO: Verify Notes and Release history sections
 
     # TODO: Continue implementation
 
@@ -59,7 +50,7 @@ def is_an_ingnore_file(file_path):
     filename = os.path.basename(file_path)
 
     for ignore_pattern in IGNORE_FILES:
-        if fnmatch.fnmatch(filename, ignore_pattern):
+        if fnmatch.fnmatch(filename.lower(), ignore_pattern.lower()):
             return True
 
     return False
@@ -113,3 +104,93 @@ def validate_files(files):
                 all_files_are_valid = False
 
     return all_files_are_valid
+
+
+def has_valid_skd_version(skd_path):
+    try:
+        # Get skd version from version file
+        skd_version = get_skd_version(skd_path)
+    except Exception as ex:
+        print('ERROR:' + str(ex))
+        return False
+
+    # Check that all MKs have the correct SKD version
+    # note that the MK validity is done by is_valid_metakernel()
+    all_mk_files = list(glob.iglob(skd_path + '/**/*.tm', recursive=True))
+    all_mk_files += list(glob.iglob(skd_path + '/**/*.TM', recursive=True))
+    mk_files = [mk.replace(skd_path + "/", "") for mk in all_mk_files if is_versioned_mk(mk)]
+
+    mks_has_valid_versions = True
+    for mk_file in mk_files:
+        mk_filename = os.path.basename(mk_file)
+        if skd_version not in str(os.path.splitext(mk_filename)[0]).lower():
+            print('ERROR: MK file: ' + str(mk_file) + " has not the expected SKD version: " + skd_version)
+            mks_has_valid_versions = False
+
+    # Check that all the release notes files are named properly,
+    # note that the release notes files validity is done by is_valid_doc_file()
+    release_notes_dir = os.path.join(skd_path, "misc/release_notes")
+    if not os.path.exists(release_notes_dir) or not os.path.isdir(release_notes_dir):
+        print('ERROR: Release notes path doesn\'t exist or is not a directory: ' + str(release_notes_dir))
+        return False
+
+    skd_current_path = list(glob.iglob(release_notes_dir + '/*_skd_current.txt', recursive=False))
+    if len(skd_current_path) == 0:
+        print('ERROR: Current release notes file not found at path: ' + str(release_notes_dir))
+        return False
+    elif len(skd_current_path) > 1:
+        print('ERROR: More than one files matches *_skd_current.txt in release notes path: ' + str(release_notes_dir))
+        return False
+
+    # Check that latest release notes exists and is equal to current, note this is a workaround
+    # to commented section below that actually checks all release notes and looks for unexpected files
+    skd_current_path = skd_current_path[0]
+    skd_current_filename = os.path.basename(skd_current_path)
+    version_int = int(skd_version.replace("v", ""))
+    rel_note_filename = skd_current_filename.replace("current", "{:03d}".format(version_int))
+    rel_note_filepath = os.path.join(release_notes_dir, rel_note_filename)
+    release_notes_files = [skd_current_filename ]
+    all_release_notes_found = True
+    if not os.path.exists(rel_note_filepath):
+        print('ERROR: Release notes file: ' + rel_note_filename + ' not found at path: ' + str(release_notes_dir))
+        all_release_notes_found = False
+    else:
+        release_notes_files.append(rel_note_filename)
+
+        # Check tha current release notes files is aligned with latest release notes file
+        if not files_are_equal(rel_note_filepath, skd_current_path):
+            print('ERROR: Release notes file: ' + rel_note_filename + ' is not equal to: ' + str(skd_current_filename))
+            all_release_notes_found = False
+
+    # Check that all release notes exists
+    versions = get_versions_history_from_release_notes_file(skd_current_path)
+    for version in versions:
+        try:
+            version_int = int(version.replace("v", "").replace(".", ""))
+        except:
+            print('ERROR: Wrong version ' + version + ' retrieved from: '
+                  + skd_current_path + ' Release History section')
+            all_release_notes_found = False
+            continue
+
+        rel_note_filename = skd_current_filename.replace("current", "{:03d}".format(version_int))
+        rel_note_filepath = os.path.join(release_notes_dir, rel_note_filename)
+        if not os.path.exists(rel_note_filepath):
+            print('ERROR: Release notes file: ' + rel_note_filename + ' not found at path: ' + str(release_notes_dir))
+            all_release_notes_found = False
+        else:
+            release_notes_files.append(rel_note_filename)
+
+    # Check that in the release_notes directory that are no unexpected files
+    all_files = list(glob.iglob(release_notes_dir + '/*', recursive=True))
+    unexpected_files = [file
+                        for file in all_files
+                        if os.path.basename(file) not in release_notes_files]
+
+    for unexpected_file in unexpected_files:
+        print('ERROR: Unexpected file: ' + os.path.basename(unexpected_file) + ' found at path: ' + str(release_notes_dir))
+        print('       Or the corresponding version of ' + os.path.basename(unexpected_file) + ' is not present at '
+              + skd_current_filename + ' Release History section')
+        all_release_notes_found = False
+
+    return mks_has_valid_versions and all_release_notes_found
