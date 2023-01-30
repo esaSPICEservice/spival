@@ -893,10 +893,10 @@ def check_frame_keywords(frame_obj, keywords_ref, fk_path, keyword_indent, equal
                           "Warning raised at " + fk_path)
 
             elif value_ref == "FRAME_NAME" \
-                    or var_ref == "FRAME_NAME_LIST":
+                    or value_ref == "FRAME_NAME_LIST":
 
                 frame_names = []
-                if var_ref == "FRAME_NAME_LIST":
+                if value_ref == "FRAME_NAME_LIST":
                     if not is_spice_vector(value, str, check_duplicates=True):
                         print("ERROR: WRONG FRAME NAME LIST FOUND AT LINE: '" + keyword_data["line"] + "' " +
                               "found: '" + str(value) + "' at " + fk_path)
