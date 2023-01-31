@@ -52,19 +52,28 @@ CONTACT = "Alfredo Escalante Lopez"
 REQUIRED_SECTIONS = {"FK": ["Version and Date",
                             "References",
                             "Contact Information",
-                            "Implementation Notes"]}
+                            "Implementation Notes"],
+                     "IK": ["Version and Date",
+                            "References",
+                            "Contact Information",
+                            "Implementation Notes",
+                            "Naming Conventions",
+                            "Mounting Alignment",
+                            "Description"]}
+
+REPLACE_TOKENS = ["id", "name", "used_id"]
 
 FRAME_DEFINITION_KEYWORDS = \
     {
         "frame_class_Any": [
                 {
-                    "keyword": "FRAME_{frame_name}",
-                    "value": "{frame_id}",
+                    "keyword": "FRAME_{name}",
+                    "value": "{id}",
                     "line_nr": 0
                 },
                 {
-                    "keyword": "FRAME_{frame_id}_NAME",
-                    "value": "{frame_name}",
+                    "keyword": "FRAME_{id}_NAME",
+                    "value": "{name}",
                     "line_nr": 1
                 },
                 {
@@ -75,8 +84,8 @@ FRAME_DEFINITION_KEYWORDS = \
                 },
                 {
                     "keyword": "FRAME_{used_id}_CLASS_ID",
-                    "value": "=str({frame_id}) == str(value) " +
-                             "if frame_class in ['4', '5', '6'] " +
+                    "value": "=str({id}) == str(value) " +
+                             "if def_obj['frame_class'] in ['4', '5', '6'] " +
                              "else True",
                     "line_nr": 3
                 },
@@ -182,6 +191,77 @@ FRAME_DEFINITION_KEYWORDS = \
                 "keyword": "TKFRAME_{used_id}_Q",
                 "value": "=is_spice_vector(value, [float, int], 4)",
                 "line_nr": 7
+            }
+        ]
+    }
+
+INSTRUMENT_DEFINITION_KEYWORDS = \
+    {
+        "instrument_Any": [
+                {
+                    "keyword": "INS{id}_NAME",
+                    "value": "{name}",
+                    "line_nr": 0
+                },
+                {
+                    "keyword": "INS{id}_BORESIGHT",
+                    "value": "=is_spice_vector(value, [float, int], 3)",
+                    "line_nr": 1
+                },
+                {
+                    "keyword": "INS{id}_FOV_FRAME",
+                    "value": "FRAME_NAME",
+                    "line_nr": 2
+                },
+                {
+                    "keyword": "INS{id}_FOV_SHAPE",
+                    "value": "['CIRCLE', 'ELLIPSE', 'RECTANGLE', 'POLYGON']",
+                    "line_nr": 3
+                },
+                {
+                    "keyword": "INS{id}_FOV_CLASS_SPEC",
+                    "value": "['CORNERS', 'ANGLES']",
+                    "line_nr": 4,
+                    "optional": "'INS{id}_FOV_BOUNDARY_CORNERS' in keywords",
+                    "sub_keywords_key": "='ins_fov_class_specs_' + str(value)"
+                },
+                {
+                    "keyword": "INS{id}_PLATFORM_ID",
+                    "value": "=is_number(value)",
+                    "optional": "True"
+                }
+          ],
+
+        "ins_fov_class_specs_CORNERS": [
+            {
+                "keyword": "INS{id}_FOV_BOUNDARY_CORNERS",
+                "value": "=is_spice_vector(value, [float, int], 'len(matrix) % 3 == 0')",
+                "line_nr": 5
+            }
+        ],
+
+        "ins_fov_class_specs_ANGLES": [
+            {
+                "keyword": "INS{id}_FOV_REF_VECTOR",
+                "value": "=is_spice_vector(value, [float, int], 3)",
+                "line_nr": 5
+            },
+            {
+                "keyword": "INS{id}_FOV_REF_ANGLE",
+                "value": "=is_number(value)",
+                "line_nr": 6
+            },
+            {
+                "keyword": "INS{id}_FOV_CROSS_ANGLE",
+                "value": "=is_number(value)",
+                "optional": "def_obj['fov_shape'] == 'CIRCLE'",
+                "line_nr": 7
+            },
+            {
+                "keyword": "INS{id}_FOV_ANGLE_UNITS",
+                "value": "['DEGREES', 'RADIANS', 'ARCSECONDS'," +
+                         " 'ARCMINUTES', 'HOURANGLE', 'MINUTEANGLE'," +
+                         " 'SECONDANGLE']",
             }
         ]
     }

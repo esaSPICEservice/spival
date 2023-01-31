@@ -454,7 +454,7 @@ def validate(path_arr=None):
         if all_files_are_valid:
             print("")
             print("=============================================================")
-            print("==========             SKD IS VALID!!!!             =========")
+            print("==========           KERNEL FILES VALID!!!!         =========")
             print("=============================================================")
             print("")
             return 0
@@ -462,7 +462,7 @@ def validate(path_arr=None):
         else:
             print("")
             print("=============================================================")
-            print("==========              NOT VALID SKD               =========")
+            print("==========          NOT VALID KERNEL FILES          =========")
             print("=============================================================")
             print("")
             return 1
@@ -470,7 +470,7 @@ def validate(path_arr=None):
     except Exception as ex:
         print("")
         print("=============================================================")
-        print("==========          ERROR IN SKD VALIDATION         =========")
+        print("==========              ERROR IN VALIDATION         =========")
         print("=============================================================")
         print("")
         print(" Exception: " + str(ex))

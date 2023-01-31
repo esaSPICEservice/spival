@@ -14,8 +14,7 @@ from spival.utils.files import is_empty_file, \
     validate_indentation, \
     validate_trailing_chars, read_all_text, get_data_text_from_text_kernel, get_sections_map_from_kernel_comments, \
     get_section_from_sections_map, get_naif_ids_from_text, \
-    get_frames_definitions_from_text
-
+    get_frames_definitions_from_text, get_instruments_definitions_from_text
 
 # Modification of:
 # https://spiceypy.readthedocs.io/en/main/other_stuff.html#lesson-1-kernel-management-with-the-kernel-subsystem
@@ -162,8 +161,13 @@ def is_valid_text_kernel(filename, check_line_length=True, check_indentation=Tru
         is_valid = False
 
     if is_fk_file(filename):
-        if not is_valid_frameskernel(filename):
+        if not is_valid_frames_kernel(filename):
             print("ERROR!! - WRONG FRAMES-KERNEL: " + filename)
+            is_valid = False
+
+    elif is_ik_file(filename):
+        if not is_valid_instruments_kernel(filename):
+            print("ERROR!! - WRONG INSTRUMENTS-KERNEL: " + filename)
             is_valid = False
 
     # TODO: Continue implementation
@@ -453,9 +457,21 @@ def get_skd_version(skd_path):
     return version
 
 
+def has_extension(path, extension):
+    fk_filename = os.path.basename(path)
+    return str(os.path.splitext(fk_filename)[1]).lower() == extension
+
+
+def is_fk_file(fk_path):
+    return has_extension(fk_path, ".tf")
+
+
+def is_ik_file(fk_path):
+    return has_extension(fk_path, ".ti")
+
+
 def is_mk_file(mk_path):
-    mk_filename = os.path.basename(mk_path)
-    return str(os.path.splitext(mk_filename)[1]).lower() == ".tm"
+    return has_extension(mk_path, ".tm")
 
 
 def is_versioned_mk(mk_path):
@@ -534,12 +550,7 @@ def check_release_notes_version(rel_notes_file):
     return is_valid
 
 
-def is_fk_file(fk_path):
-    fk_filename = os.path.basename(fk_path)
-    return str(os.path.splitext(fk_filename)[1]).lower() == ".tf"
-
-
-def is_valid_frameskernel(fk_path):
+def is_valid_frames_kernel(fk_path):
 
     try:
         data_text, comments = get_data_text_from_text_kernel(fk_path)
@@ -577,6 +588,39 @@ def is_valid_frameskernel(fk_path):
     return all_required_section_found and valid_ids and valid_frames
 
 
+def is_valid_instruments_kernel(ik_path):
+
+    try:
+        data_text, comments = get_data_text_from_text_kernel(ik_path)
+    except Exception as ex:
+        print("ERROR!! - Obtaining data text from: " + ik_path + " , exception: " + str(ex))
+        return False
+
+    if not len(data_text):
+        print("ERROR: No data sections found in kernel: " + ik_path)
+        return False
+
+    if not len(comments):
+        print("ERROR: No text comments found in kernel: " + ik_path)
+        return False
+
+    sections_map = get_sections_map_from_kernel_comments(comments)
+    if sections_map is None:
+        print("ERROR: Could not obtain sections from kernel: " + ik_path)
+        return False
+
+    # Check required sections
+    all_required_section_found = check_required_sections(sections_map, REQUIRED_SECTIONS["IK"], ik_path)
+
+    # Check NAIF IDs if any is found
+    valid_ids = check_naif_id_associations(data_text, sections_map, ik_path)
+
+    # Check instruments definitions
+    valid_instruments = check_instruments_definitions(data_text, sections_map, ik_path)
+
+    return all_required_section_found and valid_ids and valid_instruments
+
+
 def check_required_sections(sections_map, required_sections, file_path):
     all_required_section_found = True
 
@@ -594,7 +638,7 @@ def check_required_sections(sections_map, required_sections, file_path):
     return all_required_section_found
 
 
-def check_naif_id_associations(data_text, sections_map, fk_path):
+def check_naif_id_associations(data_text, sections_map, kernel_path):
     # Check NAIF IDs if any is found
     valid_ids = True
 
@@ -602,7 +646,7 @@ def check_naif_id_associations(data_text, sections_map, fk_path):
         naif_ids = get_naif_ids_from_text(data_text)
         FOUND_NAIF_IDS.extend(naif_ids)
     except Exception as ex:
-        print("ERROR!! - Obtaining NAIF IDs from: " + fk_path + " , exception: " + str(ex))
+        print("ERROR!! - Obtaining NAIF IDs from: " + kernel_path + " , exception: " + str(ex))
         return False
 
     if len(naif_ids):
@@ -621,7 +665,7 @@ def check_naif_id_associations(data_text, sections_map, fk_path):
             for naif_id_section in naif_id_sections:
                 # Note that synonyms array also contains the body_name
                 if not (check_naif_id_in_section_text(naif_id, naif_ids[naif_id]["synonyms"],
-                                                      naif_id_section[0], naif_id_section[1], fk_path)):
+                                                      naif_id_section[0], naif_id_section[1], kernel_path)):
                     valid_ids = False
 
     """
@@ -765,70 +809,91 @@ def check_frame_definitions(data_text, sections_map, fk_path):
                 # Skip because we already know that its definition is wrong:
                 continue
 
-            equal_indent = None  # Must be the same inside each frame
-            value_indent = None  # Must be the same inside each frame
+            keyword_indent = check_keywords_indentation(frames[frame_id]["keywords"], keyword_indent, fk_path)
 
-            keywords_ref = FRAME_DEFINITION_KEYWORDS["frame_class_Any"]
-
-            frames_is_valid, keyword_indent, equal_indent, value_indent = check_frame_keywords(frames[frame_id],
-                                                                                               keywords_ref, fk_path,
-                                                                                               keyword_indent,
-                                                                                               equal_indent,
-                                                                                               value_indent)
+            frames_is_valid = check_kernel_keywords(frames[frame_id], "frame_class_Any",
+                                                    FRAME_DEFINITION_KEYWORDS, fk_path)
             if not frames_is_valid:
                 frames_are_valid = False
 
     return frames_are_valid
 
 
-def check_frame_keywords(frame_obj, keywords_ref, fk_path, keyword_indent, equal_indent, value_indent):
-    frame_if_valid = True
+def check_keywords_indentation(keywords, keyword_indent, path):
 
-    frame_class = None  # To have frame_class variable inside eval context
-    if "frame_class" in frame_obj:
-        frame_class = frame_obj["frame_class"]
+    equal_indent = None  # Must be the same inside each frame
+    value_indent = None  # Must be the same inside each frame
 
-    keywords = frame_obj["keywords"]
+    for keyword_key in keywords:
+        keyword_data = keywords[keyword_key]
+
+        # Check indentation
+        if equal_indent is None or keyword_data["indent_break"]:
+            equal_indent = keyword_data["equal_indent"]
+
+            value_indent = keyword_data["value_indent"]
+            if is_number(keyword_data["value"]) and float(keyword_data["value"]) >= 0.0:
+                # In case of first value is a positive number, is shall have an extra blank
+                # so our indentation is one char minus
+                value_indent = value_indent - 1
+
+            if keyword_indent is None:
+                keyword_indent = keyword_data["keyword_indent"]
+        else:
+
+            tmp_value_indent = keyword_data["value_indent"]
+            if is_number(keyword_data["value"]) and float(keyword_data["value"]) >= 0.0:
+                # In case of value where is a positive number, is shall have an extra blank
+                # so our indentation is one char minus
+                tmp_value_indent = tmp_value_indent - 1
+
+            if keyword_data["keyword_indent"] != keyword_indent:
+                print("WARNING: WRONG INDENTATION OF KEYWORD: '" + keyword_data["var"] + "' at line: '" +
+                      keyword_data["line"] + "' at " + path)
+            elif keyword_data["equal_indent"] != equal_indent:
+                print("WARNING: WRONG INDENTATION OF '=' at line: '" + keyword_data["line"] + "' at " + path)
+            elif tmp_value_indent != value_indent:
+                print("WARNING: WRONG INDENTATION OF '" + keyword_data["value"] + "' at line: '" +
+                      keyword_data["line"] + "' at " + path)
+
+    return keyword_indent
+
+
+def check_kernel_keywords(def_obj, keywords_ref_key, keywords_ref_map, path):
+    keywords_valid = True
+
+    keywords_ref = keywords_ref_map[keywords_ref_key]
+
+    keywords = def_obj["keywords"]
     for keyword_ref_data in keywords_ref:
 
         keyword_ref = keyword_ref_data["keyword"]
         if keyword_ref not in keywords:
-            print("ERROR: MISSING KEYWORD AT FRAME DEFINITION: " + keyword_ref +
-                  " not found at: \n" + frame_obj["frame_definition"] + "\n at " + fk_path)
-            frame_if_valid = False
+
+            if "optional" in keyword_ref_data:
+                if eval(keyword_ref_data["optional"]):
+                    continue  # Ignore this keyword in this case
+
+            print("ERROR: MISSING KEYWORD AT DEFINITION: " + keyword_ref +
+                  " not found at: \n" + def_obj["definition"] + "\n at " + path)
+            keywords_valid = False
             continue
 
         keyword_data = keywords[keyword_ref]
 
         # Check keyword validity
-        var_ref = replace_tokens(keyword_ref_data["keyword"], frame_obj, keyword_data)
+        var_ref = replace_tokens(keyword_ref_data["keyword"], keyword_data, def_obj)
         if keyword_data["var"] != var_ref:
-            print("ERROR: WRONG KEYWORD AT FRAME DEFINITION: " + keyword_data["var"] +
-                  " expected: '" + var_ref + "' at " + fk_path)
-            frame_if_valid = False
-
-        # Check indentation
-        if equal_indent is None:
-            equal_indent = keyword_data["equal_indent"]
-            value_indent = keyword_data["value_indent"]
-            if keyword_indent is None:
-                keyword_indent = keyword_data["keyword_indent"]
-        else:
-            if keyword_data["keyword_indent"] != keyword_indent:
-                print("WARNING: WRONG INDENTATION OF KEYWORD: '" + keyword_data["var"] + "' at line: '" +
-                      keyword_data["line"] + "' at " + fk_path)
-            elif keyword_data["equal_indent"] != equal_indent:
-                print("WARNING: WRONG INDENTATION OF '=' at line: '" + keyword_data["line"] + "' at " + fk_path)
-            elif keyword_data["value_indent"] != value_indent:
-                print("WARNING: WRONG INDENTATION OF '" + keyword_data["value"] + "' at line: '" +
-                      keyword_data["line"] + "' at " + fk_path)
+            print("ERROR: WRONG KEYWORD AT DEFINITION: " + keyword_data["var"] +
+                  " expected: '" + var_ref + "' at " + path)
+            keywords_valid = False
 
         # Check line order
         if "line_nr" in keyword_ref_data:
             if keyword_data["line_nr"] != keyword_ref_data["line_nr"]:
                 print("WARNING: WRONG LINE ORDER FOR KEYWORD '" + keyword_data["var"] + "' " +
                       "found at line nr: " + str(keyword_data["line_nr"]) +
-                      " expected at line nr: " + str(keyword_ref_data["line_nr"]) + " at " + fk_path)
+                      " expected at line nr: " + str(keyword_ref_data["line_nr"]) + " at " + path)
 
         # Check proper value
         value = ""
@@ -839,31 +904,31 @@ def check_frame_keywords(frame_obj, keywords_ref, fk_path, keyword_indent, equal
             if isinstance(value, str):
                 # Check number of "'" in string
                 if "'" in value and len(value.split("'")) % 2 != 1:
-                    print("ERROR: WRONG NUMBER OF \"'\" FOUND AT LINE: '" + keyword_data["line"] + "' at " + fk_path)
-                    frame_if_valid = False
+                    print("ERROR: WRONG NUMBER OF \"'\" FOUND AT LINE: '" + keyword_data["line"] + "' at " + path)
+                    keywords_valid = False
 
                 # Remove "'" from sting
                 value = value.replace("'", "")
 
             if "{" in value_ref and not value_ref.startswith("="):
-                value_ref = replace_tokens(value_ref, frame_obj, keyword_data)
+                value_ref = replace_tokens(value_ref, keyword_data, def_obj)
                 if value != value_ref:
                     print("ERROR: WRONG VALUE FOUND AT LINE: '" + keyword_data["line"] + "' " +
                           "found: '" + str(value) + "' expected: '" + str(value_ref)
-                          + "' at " + fk_path)
-                    frame_if_valid = False
+                          + "' at " + path)
+                    keywords_valid = False
 
             elif value_ref.startswith("["):
                 value_ref = eval(value_ref)
                 if value not in value_ref:
                     print("ERROR: WRONG VALUE FOUND AT LINE: '" + keyword_data["line"] + "' " +
                           "found: '" + str(value) + "' expected: '" + str(value_ref)
-                          + "' at " + fk_path)
-                    frame_if_valid = False
+                          + "' at " + path)
+                    keywords_valid = False
 
             elif value_ref.startswith("="):
 
-                result = eval(replace_tokens(value_ref[1:], frame_obj, keyword_data))
+                result = eval(replace_tokens(value_ref[1:], keyword_data, def_obj))
 
                 reason = None
                 if isinstance(result, tuple):
@@ -880,8 +945,8 @@ def check_frame_keywords(frame_obj, keywords_ref, fk_path, keyword_indent, equal
 
                     print("ERROR: WRONG VALUE FOUND AT LINE: '" + keyword_data["line"] + "' " + reason_text +
                           "found: '" + str(value) + "' expected: '" + str(value_ref)
-                          + "' at " + fk_path)
-                    frame_if_valid = False
+                          + "' at " + path)
+                    keywords_valid = False
 
             elif value_ref == "NAIF_ID":
 
@@ -890,7 +955,7 @@ def check_frame_keywords(frame_obj, keywords_ref, fk_path, keyword_indent, equal
                           "found: '" + str(value) + "' expected any of defined NAIF IDs " +
                           "at the validated FKs or any of the SPICE BUILT-IN BODY IDs.\n" +
                           "Check if this BODY ID has been defined in other kernel.\n" +
-                          "Warning raised at " + fk_path)
+                          "Warning raised at " + path)
 
             elif value_ref == "FRAME_NAME" \
                     or value_ref == "FRAME_NAME_LIST":
@@ -899,8 +964,8 @@ def check_frame_keywords(frame_obj, keywords_ref, fk_path, keyword_indent, equal
                 if value_ref == "FRAME_NAME_LIST":
                     if not is_spice_vector(value, str, check_duplicates=True):
                         print("ERROR: WRONG FRAME NAME LIST FOUND AT LINE: '" + keyword_data["line"] + "' " +
-                              "found: '" + str(value) + "' at " + fk_path)
-                        frame_if_valid = False
+                              "found: '" + str(value) + "' at " + path)
+                        keywords_valid = False
                     else:
                         frame_names.extend(eval(value))
                 else:
@@ -912,7 +977,7 @@ def check_frame_keywords(frame_obj, keywords_ref, fk_path, keyword_indent, equal
                               "found: '" + str(frm_name) + "' expected any of defined FRAME NAMES " +
                               "at the validated FKs or any of the SPICE BUILT-IN FRAMES.\n" +
                               "Check if this FRAME NAME has been defined in other kernel.\n" +
-                              "Warning raised at " + fk_path)
+                              "Warning raised at " + path)
 
             else:
                 raise NotImplementedError("Reference value not supported: " + value_ref)
@@ -921,35 +986,29 @@ def check_frame_keywords(frame_obj, keywords_ref, fk_path, keyword_indent, equal
         if "sub_keywords_key" in keyword_ref_data:
 
             sub_keywords_key = eval(keyword_ref_data["sub_keywords_key"][1:])
-            if sub_keywords_key in FRAME_DEFINITION_KEYWORDS:
-                keywords_ref = FRAME_DEFINITION_KEYWORDS[sub_keywords_key]
-
-                sub_keywords_valid, keyword_indent, equal_indent, value_indent = check_frame_keywords(frame_obj,
-                                                                                                      keywords_ref,
-                                                                                                      fk_path,
-                                                                                                      keyword_indent,
-                                                                                                      equal_indent,
-                                                                                                      value_indent)
+            if sub_keywords_key in keywords_ref_map:
+                sub_keywords_valid = check_kernel_keywords(def_obj, sub_keywords_key, keywords_ref_map, path)
                 if not sub_keywords_valid:
-                    frame_if_valid = False
+                    keywords_valid = False
 
             else:
                 print("WARNING: Could not check sub_keywords for key: " + sub_keywords_key
-                      + ", Warning raised at " + fk_path)
+                      + ", Warning raised at " + path)
 
-    return frame_if_valid, keyword_indent, equal_indent, value_indent
+    return keywords_valid
 
 
-def replace_tokens(text, frame_obj, keyword_data):
+def replace_tokens(text, keyword_data, frame_obj):
 
-    if "{frame_id}" in text:
-        text = text.replace("{frame_id}", str(frame_obj["frame_id"]))
-
-    if "{frame_name}" in text:
-        text = text.replace("{frame_name}", frame_obj["frame_name"])
-
-    if "{used_id}" in text:
-        text = text.replace("{used_id}", str(keyword_data["used_id"]))
+    for token in REPLACE_TOKENS:
+        token_s = "{" + token + "}"
+        if token_s in text:
+            token_v = str(frame_obj[token]) \
+                if token in frame_obj \
+                else str(keyword_data[token])
+            text = text.replace(token_s, token_v)
+            if "{" not in text:
+                break
 
     return text
 
@@ -1011,13 +1070,45 @@ def is_spice_vector(text, elem_type, size=None, values_range=None, check_duplica
             # Eg: ( 1.0 4.0 5.0 )
             text = "(" + ",".join(text.replace("(", "").replace(")", "").split()) + ")"
 
+        elif "\n" in text:
+            # Add "," to the line endings if not present. Eg: 0.00000,  1.00000,  0.00000
+            new_text = ""
+            comma_endings = None
+            lines = text.splitlines()
+            num_lines = len(lines)
+            for line_idx in range(num_lines):
+                line = lines[line_idx]
+                if line_idx < num_lines - 1\
+                        and line.strip() != "(":
+                    next_line = lines[line_idx + 1]
+                    tmp_comma_endings = line.rstrip().endswith(",")
+                    if comma_endings is None:
+                        comma_endings = tmp_comma_endings
+                    elif comma_endings != tmp_comma_endings and next_line.strip() != ")":
+                        return False, "Different line endings with or without ','"
+
+                    new_text += line + ("," if not tmp_comma_endings
+                                                and not line.rstrip().endswith(")")
+                                                and next_line.strip() != ")"
+                                            else "")
+                else:
+                    new_text += line
+
+            text = new_text
+
         matrix = eval(text)
         if not isinstance(matrix, tuple):
             return False, "Wrong format"
 
         if size is not None:
-            if len(matrix) != size:
-                return False, "Wrong length or missing comma, expected " + str(size) + " elements."
+            if isinstance(size, int):
+                if len(matrix) != size:
+                    return False, "Wrong length or missing comma, expected " + str(size) + " elements."
+            elif isinstance(size, str):
+                if not eval(size):
+                    return False, "Wrong size or missing comma."
+            else:
+                raise NotImplementedError("Unsupported size type at is_spice_vector, type: " + str(type(size)))
 
         elem_types = [elem_type]
         if isinstance(elem_type, list):
@@ -1048,3 +1139,36 @@ def is_spice_vector(text, elem_type, size=None, values_range=None, check_duplica
 
     return True
 
+
+def is_number(value_s):
+    try:
+        val = float(value_s)
+        return True
+    except:
+        return False
+
+
+def check_instruments_definitions(data_text, sections_map, ik_path):
+    try:
+        instruments = get_instruments_definitions_from_text(data_text)
+    except Exception as ex:
+        print("ERROR!! - Obtaining instruments definitions from: " + ik_path + " , exception: " + str(ex))
+        return False
+
+    ins_are_valid = True
+    if len(instruments):
+
+        # Validate each instrument definition
+        keyword_indent = None  # Must be the same for all instruments
+
+        for ins_id in instruments:
+
+            keyword_indent = check_keywords_indentation(instruments[ins_id]["keywords"], keyword_indent, ik_path)
+
+            ins_is_valid = check_kernel_keywords(instruments[ins_id], "instrument_Any",
+                                                 INSTRUMENT_DEFINITION_KEYWORDS, ik_path)
+
+            if not ins_is_valid:
+                ins_are_valid = False
+
+    return ins_are_valid

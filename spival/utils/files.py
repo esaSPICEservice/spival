@@ -972,6 +972,7 @@ def get_frames_definitions_from_text(text):
     curr_var = ""
     used_id = ""
     line_nr = 0
+    indent_break = False
     for line in text.splitlines():
         if "=" in line:
             tokens = line.split()
@@ -1025,11 +1026,11 @@ def get_frames_definitions_from_text(text):
                 if frame_id not in frames:
                     if last_frame_id is not None:
                         # Remove blank lines at borders
-                        frames[last_frame_id]["frame_definition"] = frames[last_frame_id]["frame_definition"].rstrip()
+                        frames[last_frame_id]["definition"] = frames[last_frame_id]["definition"].rstrip()
 
                     line_nr = 0
-                    frames[frame_id] = {"frame_id": frame_id,
-                                        "frame_definition": "",
+                    frames[frame_id] = {"id": frame_id,
+                                        "definition": "",
                                         "keywords": {}}
 
                 # Check if is a frame name line
@@ -1037,18 +1038,20 @@ def get_frames_definitions_from_text(text):
                 if len(frame_var_parts) == 3 \
                         and frame_var_parts[0] == "FRAME" and frame_var_parts[2] == "NAME":
                     frame_name = curr_value.replace("'", "").strip()
-                    frames[frame_id]["frame_name"] = frame_name
+                    frames[frame_id]["name"] = frame_name
                     frame_name2id[frame_name] = frame_id
 
-                frames[frame_id]["frame_definition"] += line + "\n"
+                if not frames[frame_id]["definition"].endswith("\n"):
+                    frames[frame_id]["definition"] += "\n"
+                frames[frame_id]["definition"] += line + "\n"
 
                 keyword = curr_var
                 if keyword.endswith("_NAME"):
-                    keyword = keyword.replace(used_id, "{frame_id}")
+                    keyword = keyword.replace(used_id, "{id}")
                 elif used_id in keyword and len(keyword.split(used_id)[1]):
                     keyword = keyword.replace(used_id, "{used_id}")
                 else:
-                    keyword = "FRAME_{frame_name}"
+                    keyword = "FRAME_{name}"
 
                 if keyword not in frames[frame_id]["keywords"]:
 
@@ -1063,7 +1066,8 @@ def get_frames_definitions_from_text(text):
                                     "line_nr": line_nr,
                                     "keyword_indent": line.index(curr_var),
                                     "equal_indent": line.index("="),
-                                    "value_indent": line.replace(curr_var, "#" * len(curr_var)).index(tokens[2]) - (1 if str(tokens[2]).isnumeric() else 0),
+                                    "value_indent": line.replace(curr_var, "#" * len(curr_var)).index(tokens[2]),
+                                    "indent_break": indent_break,
                                     "line": line
                                     }
 
@@ -1075,6 +1079,7 @@ def get_frames_definitions_from_text(text):
                 last_frame_id = frame_id
                 last_used_id = used_id
                 line_nr += 1
+                indent_break = False
 
         elif len(line.strip()):
             # We could be at matrix definition so, line shall contain numbers and or ")"
@@ -1114,22 +1119,148 @@ def get_frames_definitions_from_text(text):
                     raise Exception("Unexpected line in frame definition: '" + line + "' " +
                                     "for frame_id: " + str(last_frame_id))
 
-                frames[last_frame_id]["frame_definition"] += line + "\n"
+                frames[last_frame_id]["definition"] += line + "\n"
 
                 keyword = curr_var
                 if last_used_id in keyword and len(keyword.split(used_id)[1]):
                     keyword = keyword.replace(used_id, "{used_id}")
-                    frames[last_frame_id]["keywords"][keyword]["value"] += line
+                    text = frames[last_frame_id]["keywords"][keyword]["value"]
+                    if len(text.splitlines()) == 1:
+                        text = text + "\n"
+
+                    text += line + "\n"
+                    frames[last_frame_id]["keywords"][keyword]["value"] = text
 
             else:
                 raise Exception("Unexpected line in frame definition: '" + line + "'")
 
         elif last_frame_id is not None:
-            # Just un case there are blank lines, link them to the frame_definition for later checks
-            frames[last_frame_id]["frame_definition"] += line + "\n"
+            # Just un case there are blank lines, link them to the definition for later checks
+            frames[last_frame_id]["definition"] += line + "\n"
+
+            # Notify that equal indentation or value indentation could be changed
+            indent_break = True
 
     if last_frame_id is not None:
         # Remove blank lines at borders
-        frames[last_frame_id]["frame_definition"] = frames[last_frame_id]["frame_definition"].rstrip()
+        frames[last_frame_id]["definition"] = frames[last_frame_id]["definition"].rstrip()
 
     return frames
+
+
+def get_instruments_definitions_from_text(text):
+    instruments = {}
+    instrument_name2id = {}
+    last_ins_id = None
+    curr_var = ""
+    line_nr = 0
+    indent_break = False
+    for line in text.splitlines():
+        if "=" in line:
+            tokens = line.split()
+            curr_var = tokens[0].strip()
+            curr_value = line.split("=")[1].strip()
+
+            if curr_var.startswith("NAIF_") \
+                   or curr_var.startswith("SCLK") \
+                   or curr_var.startswith("OBJECT"):
+               # Name to Id, SCLK or Object association line, ignore them
+               continue
+
+            if not tokens[1] == "=":
+                raise Exception("Wrong line format: " + line)
+
+            ins_id = None
+            try:
+                ins_id_s = curr_var.split("_")[0].replace("INS", "")
+                if ins_id_s.replace("-", "").isnumeric():
+                    # Get frame id from variable name: eg: INS-121310_NAME
+                    ins_id = int(ins_id_s)
+            except Exception as ex:
+                raise Exception("Wrong INSTRUMENT ID at line: '" + line + "' , ex: " + str(ex))
+
+            if ins_id is None:
+                raise Exception("INSTRUMENT ID not valid, at line: '" + line + "'")
+
+            else:
+
+                if ins_id not in instruments:
+                    if last_ins_id is not None:
+                        # Remove blank lines at borders
+                        instruments[last_ins_id]["definition"] = instruments[last_ins_id]["definition"].rstrip()
+
+                    line_nr = 0
+                    instruments[ins_id] = {"id": ins_id,
+                                            "definition": "",
+                                            "keywords": {}}
+
+                # Check if is a instrument name line
+                if curr_var.endswith("NAME"):
+                    ins_name = curr_value.replace("'", "").strip()
+                    instruments[ins_id]["name"] = ins_name
+                    instrument_name2id[ins_name] = ins_id
+
+                if not instruments[ins_id]["definition"].endswith("\n"):
+                    instruments[ins_id]["definition"] += "\n"
+                instruments[ins_id]["definition"] += line + "\n"
+
+                keyword = curr_var.replace(str(ins_id), "{id}")
+
+                if keyword not in instruments[ins_id]["keywords"]:
+
+                    if keyword.endswith("_FOV_SHAPE"):
+                        instruments[ins_id]["fov_shape"] = curr_value.replace("'", "").strip()
+
+                    keyword_data = {
+                                    "keyword": keyword,
+                                    "id": ins_id,
+                                    "var": curr_var,
+                                    "value": curr_value,
+                                    "line_nr": line_nr,
+                                    "keyword_indent": line.index(curr_var),
+                                    "equal_indent": line.index("="),
+                                    "value_indent": line.replace(curr_var, "#" * len(curr_var)).index(tokens[2]),
+                                    "indent_break": indent_break,
+                                    "line": line
+                                    }
+
+                    instruments[ins_id]["keywords"][keyword] = keyword_data
+
+                else:
+                    raise Exception("Duplicated keyword: " + curr_var + " at line: '" + line)
+
+                last_ins_id = ins_id
+                line_nr += 1
+                indent_break = False
+
+        elif len(line.strip()):
+            # We could be at matrix definition so, line shall contain numbers and or ")"
+            if last_ins_id is not None:
+
+                instruments[last_ins_id]["definition"] += line + "\n"
+
+                keyword = curr_var
+                if str(last_ins_id) in keyword and len(keyword.split(str(last_ins_id))[1]):
+                    keyword = curr_var.replace(str(last_ins_id), "{id}")
+                    text = instruments[last_ins_id]["keywords"][keyword]["value"]
+                    if len(text.splitlines()) == 1:
+                        text = text + "\n"
+
+                    text += line + "\n"
+                    instruments[last_ins_id]["keywords"][keyword]["value"] = text
+
+            else:
+                raise Exception("Unexpected line in instrument definition: '" + line + "'")
+
+        elif last_ins_id is not None:
+            # Just un case there are blank lines, link them to the definition for later checks
+            instruments[last_ins_id]["definition"] += line + "\n"
+
+            # Notify that equal indentation or value indentation could be changed
+            indent_break = True
+
+    if last_ins_id is not None:
+        # Remove blank lines at borders
+        instruments[last_ins_id]["definition"] = instruments[last_ins_id]["definition"].rstrip()
+
+    return instruments
