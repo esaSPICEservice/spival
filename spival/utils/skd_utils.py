@@ -12,9 +12,9 @@ from spival.utils.files import is_empty_file, \
     get_section_text_from_kernel_comments, \
     get_kernel_version, \
     validate_indentation, \
-    validate_trailing_chars, read_all_text, get_data_text_from_text_kernel, get_sections_map_from_kernel_comments, \
+    validate_trailing_chars, read_all_text, get_text_and_data_from_kernel, get_sections_map_from_kernel_comments, \
     get_section_from_sections_map, get_naif_ids_from_text, \
-    get_frames_definitions_from_text, get_instruments_definitions_from_text
+    get_frames_definitions_from_text, get_instruments_definitions_from_text, get_sites_definitions_from_text
 
 # Modification of:
 # https://spiceypy.readthedocs.io/en/main/other_stuff.html#lesson-1-kernel-management-with-the-kernel-subsystem
@@ -226,6 +226,11 @@ def is_valid_binary_kernel(filename, check_line_length=True, check_indentation=T
     if not has_valid_contact_section(filename):
         is_valid = False
 
+    if is_spk_file(filename):
+        if not is_valid_spk_kernel(filename):
+            print("ERROR!! - WRONG SPK-KERNEL: " + filename)
+            is_valid = False
+
     return is_valid
 
 
@@ -415,7 +420,7 @@ def has_valid_version_and_date_section(kernel_file):
 
                 tmp_kernel_version = tmp_kernel_version - multiplier
 
-            except Exception as ex:
+            except Exception:
                 print("ERROR: Wrong version text format in 'Version and Date' section found in kernel: "
                       + kernel_file + " with version: " + str(kernel_version) + ", at line: " + line)
                 return False
@@ -472,6 +477,10 @@ def is_ik_file(fk_path):
 
 def is_mk_file(mk_path):
     return has_extension(mk_path, ".tm")
+
+
+def is_spk_file(mk_path):
+    return has_extension(mk_path, ".bsp")
 
 
 def is_versioned_mk(mk_path):
@@ -553,7 +562,7 @@ def check_release_notes_version(rel_notes_file):
 def is_valid_frames_kernel(fk_path):
 
     try:
-        data_text, comments = get_data_text_from_text_kernel(fk_path)
+        data_text, comments = get_text_and_data_from_kernel(fk_path)
     except Exception as ex:
         print("ERROR!! - Obtaining data text from: " + fk_path + " , exception: " + str(ex))
         return False
@@ -591,7 +600,7 @@ def is_valid_frames_kernel(fk_path):
 def is_valid_instruments_kernel(ik_path):
 
     try:
-        data_text, comments = get_data_text_from_text_kernel(ik_path)
+        data_text, comments = get_text_and_data_from_kernel(ik_path)
     except Exception as ex:
         print("ERROR!! - Obtaining data text from: " + ik_path + " , exception: " + str(ex))
         return False
@@ -619,6 +628,56 @@ def is_valid_instruments_kernel(ik_path):
     valid_instruments = check_instruments_definitions(data_text, sections_map, ik_path)
 
     return all_required_section_found and valid_ids and valid_instruments
+
+
+def is_valid_spk_kernel(spk_path):
+
+    try:
+        data_text, comments = get_text_and_data_from_kernel(spk_path)
+    except Exception as ex:
+        print("ERROR!! - Obtaining data text from: " + spk_path + " , exception: " + str(ex))
+        return False
+
+    if not len(comments):
+        print("ERROR: No text comments found in kernel: " + spk_path)
+        return False
+
+    if len(data_text):
+
+        sections_map = get_sections_map_from_kernel_comments(comments)
+        if sections_map is None:
+            print("ERROR: Could not obtain sections from kernel: " + spk_path)
+            return False
+
+        if get_section_from_sections_map("@IN@PINPOINT", sections_map)[0] is not None:
+            # Is a PINPOINT Kernel file
+
+            # Check required sections
+            all_required_section_found = check_required_sections(sections_map,
+                                                                 REQUIRED_SECTIONS["SPK_PINPOINT"],
+                                                                 spk_path)
+
+            # Check sites definitions
+            valid_sites = check_sites_definitions(data_text, sections_map, spk_path)
+
+            return all_required_section_found and valid_sites
+
+        elif get_section_from_sections_map("@IN@OEM2SPK", sections_map)[0] is not None:
+            # Is a OEM2SPK Kernel file
+
+            # Check required sections
+            all_required_section_found = check_required_sections(sections_map,
+                                                                 REQUIRED_SECTIONS["SPK_OEM2SPK"],
+                                                                 spk_path)
+            return all_required_section_found
+
+        else:
+            print("ERROR: SPK type not supported: " + spk_path)
+            return False
+
+    else:
+        # The SPK doesn't have /begindata sections, such as some NAIF SPKs and similar.
+        return True
 
 
 def check_required_sections(sections_map, required_sections, file_path):
@@ -651,14 +710,10 @@ def check_naif_id_associations(data_text, sections_map, kernel_path):
 
     if len(naif_ids):
 
-        naif_id_section_patters = ["@EW@NAIF ID Codes",
-                                   "@EW@NAIF ID Codes to Name Mapping",
-                                   "@EW@NAIF ID Codes -- Definitions"]
-        naif_id_sections = []
-        for sec_pattern in naif_id_section_patters:
-            sec_name, sec_text = get_section_from_sections_map(sec_pattern, sections_map)
-            if sec_name is not None:
-                naif_id_sections.append([sec_name, sec_text])
+        naif_id_section_patterns = ["@EW@NAIF ID Codes",
+                                    "@EW@NAIF ID Codes to Name Mapping",
+                                    "@EW@NAIF ID Codes -- Definitions"]
+        naif_id_sections = get_matched_sections(sections_map, naif_id_section_patterns)
 
         # TODO: Remove this check when next TODO is implemented, for the moment just look for name and syno
         for naif_id in naif_ids.keys():
@@ -741,6 +796,17 @@ def check_naif_id_in_section_text(naif_id, synonyms, section_name, section_text,
     naif_id_is_valid = True
 
     if str(naif_id) not in section_text:
+
+        # Check if we shall look for naif_id ended in NN like: -12151NN*
+        if len(synonyms) == 1:
+            last_name_part = synonyms[0].split("_")[-1]
+            if is_number(last_name_part):
+                n_digits = len(last_name_part)
+                generic_naif_id = str(naif_id)[0:-n_digits] + "N" * len(last_name_part)
+                generic_synonym = synonyms[0][0:-n_digits] + "N" * len(last_name_part)
+                return check_naif_id_in_section_text(generic_naif_id, [generic_synonym],
+                                                     section_name, section_text, fk_path)
+
         print("ERROR: NAIF ID Code: " + str(naif_id) +
               " not found at section: '" + section_name + "' at " + fk_path)
         naif_id_is_valid = False
@@ -773,15 +839,11 @@ def check_frame_definitions(data_text, sections_map, fk_path):
     frames_are_valid = True
     if len(frames):
 
-        frames_section_patters = ["@EW@Mission Frames"]
-        # TODO: Include specific frame definition sections to frames_section_patters,
+        frames_section_patterns = ["@EW@Mission Frames"]
+        # TODO: Include specific frame definition sections to frames_section_patterns,
         #       eg: "JUICE Medium Gain Antenna Frames" ...
 
-        frame_sections = []
-        for sec_pattern in frames_section_patters:
-            sec_name, sec_text = get_section_from_sections_map(sec_pattern, sections_map)
-            if sec_name is not None:
-                frame_sections.append([sec_name, sec_text])
+        frame_sections = get_matched_sections(sections_map, frames_section_patterns)
 
         # Check that frame Ids and Frame names are in the comments sections
         for frame_id in frames.keys():
@@ -828,7 +890,8 @@ def check_keywords_indentation(keywords, keyword_indent, path):
         keyword_data = keywords[keyword_key]
 
         # Check indentation
-        if equal_indent is None or keyword_data["indent_break"]:
+        if equal_indent is None \
+                or ("indent_break" in keyword_data and keyword_data["indent_break"]):
             equal_indent = keyword_data["equal_indent"]
 
             value_indent = keyword_data["value_indent"]
@@ -953,7 +1016,7 @@ def check_kernel_keywords(def_obj, keywords_ref_key, keywords_ref_map, path):
                 if not is_naif_id(value):
                     print("WARNING: WRONG VALUE FOUND AT LINE: '" + keyword_data["line"] + "' " +
                           "found: '" + str(value) + "' expected any of defined NAIF IDs " +
-                          "at the validated FKs or any of the SPICE BUILT-IN BODY IDs.\n" +
+                          "at the validated kernels or any of the SPICE BUILT-IN BODY IDs.\n" +
                           "Check if this BODY ID has been defined in other kernel.\n" +
                           "Warning raised at " + path)
 
@@ -967,7 +1030,7 @@ def check_kernel_keywords(def_obj, keywords_ref_key, keywords_ref_map, path):
                               "found: '" + str(value) + "' at " + path)
                         keywords_valid = False
                     else:
-                        frame_names.extend(eval(value))
+                        frame_names.extend(spice_vector_to_tuple(value, str))
                 else:
                     frame_names.append(value)
 
@@ -998,13 +1061,13 @@ def check_kernel_keywords(def_obj, keywords_ref_key, keywords_ref_map, path):
     return keywords_valid
 
 
-def replace_tokens(text, keyword_data, frame_obj):
+def replace_tokens(text, keyword_data, spice_obj):
 
     for token in REPLACE_TOKENS:
         token_s = "{" + token + "}"
         if token_s in text:
-            token_v = str(frame_obj[token]) \
-                if token in frame_obj \
+            token_v = str(spice_obj[token]) \
+                if token in spice_obj \
                 else str(keyword_data[token])
             text = text.replace(token_s, token_v)
             if "{" not in text:
@@ -1061,44 +1124,69 @@ def is_frame_name(frame_name):
     return True
 
 
+def spice_vector_to_tuple(text, elem_type):
+    if "(" not in text or ")" not in text:
+        raise Exception("Missing parenthesis")
+
+    if "," not in text:
+        # Eg: ( 1.0 4.0 5.0 )
+        elems = text.replace("(", "").replace(")", "").split()
+        new_elems = ["'" + elem + "'"
+                     if not is_number(elem) and "'" not in elem
+                     else elem
+                     for elem in elems]
+
+        text = "(" + ",".join(new_elems) + ")"
+
+    elif "\n" in text:
+        # Add "," to the line endings if not present. Eg: 0.00000,  1.00000,  0.00000
+        new_text = ""
+        comma_endings = None
+        lines = text.splitlines()
+        num_lines = len(lines)
+        for line_idx in range(num_lines):
+            line = lines[line_idx]
+            if line_idx < num_lines - 1 \
+                    and line.strip() != "(":
+                next_line = lines[line_idx + 1]
+                tmp_comma_endings = line.rstrip().endswith(",")
+                if comma_endings is None:
+                    comma_endings = tmp_comma_endings
+                elif comma_endings != tmp_comma_endings and next_line.strip() != ")":
+                    raise Exception("Different line endings with or without ','")
+
+                new_text += line + ("," if not tmp_comma_endings
+                                           and not line.rstrip().endswith(")")
+                                           and next_line.strip() != ")"
+                                    else "")
+            else:
+                new_text += line
+
+        text = new_text
+
+    if elem_type == "date_str":
+        dates_texts = text.replace("(", "").replace(")", "").split(",")
+        dates = []
+        for date in dates_texts:
+            dates.append(date.strip().replace("@", "'@") + "'")
+        text = "(" + ",".join(dates) + ")"
+
+    matrix = eval(text)
+    if "," in text:
+        if not isinstance(matrix, tuple):  # Eg: (0.0, 1.0, 2.0)
+            raise Exception("Wrong (f0, ..) format")
+    else:
+        if not has_valid_type(matrix, elem_type):  # Eg: (0.0)
+            raise Exception("Wrong (f0) format")
+        else:
+            matrix = [matrix]
+
+    return matrix
+
+
 def is_spice_vector(text, elem_type, size=None, values_range=None, check_duplicates=False):
     try:
-        if "(" not in text or ")" not in text:
-            return False, "Missing parenthesis"
-
-        if "," not in text:
-            # Eg: ( 1.0 4.0 5.0 )
-            text = "(" + ",".join(text.replace("(", "").replace(")", "").split()) + ")"
-
-        elif "\n" in text:
-            # Add "," to the line endings if not present. Eg: 0.00000,  1.00000,  0.00000
-            new_text = ""
-            comma_endings = None
-            lines = text.splitlines()
-            num_lines = len(lines)
-            for line_idx in range(num_lines):
-                line = lines[line_idx]
-                if line_idx < num_lines - 1\
-                        and line.strip() != "(":
-                    next_line = lines[line_idx + 1]
-                    tmp_comma_endings = line.rstrip().endswith(",")
-                    if comma_endings is None:
-                        comma_endings = tmp_comma_endings
-                    elif comma_endings != tmp_comma_endings and next_line.strip() != ")":
-                        return False, "Different line endings with or without ','"
-
-                    new_text += line + ("," if not tmp_comma_endings
-                                                and not line.rstrip().endswith(")")
-                                                and next_line.strip() != ")"
-                                            else "")
-                else:
-                    new_text += line
-
-            text = new_text
-
-        matrix = eval(text)
-        if not isinstance(matrix, tuple):
-            return False, "Wrong format"
+        matrix = spice_vector_to_tuple(text, elem_type)
 
         if size is not None:
             if isinstance(size, int):
@@ -1110,20 +1198,10 @@ def is_spice_vector(text, elem_type, size=None, values_range=None, check_duplica
             else:
                 raise NotImplementedError("Unsupported size type at is_spice_vector, type: " + str(type(size)))
 
-        elem_types = [elem_type]
-        if isinstance(elem_type, list):
-            elem_types = elem_type
-
         for elem in matrix:
-
-            valid_type = False
-            for e_type in elem_types:
-                if isinstance(elem, e_type):
-                    valid_type = True
-                    break
-            if not valid_type:
+            if not has_valid_type(elem, elem_type):
                 return False, "Wrong type for element: " + str(elem) + ", expected any of " + \
-                              str(elem_types) + " types."
+                              str(elem_type) + " types."
 
             if values_range is not None:
                 if elem not in values_range:
@@ -1134,10 +1212,26 @@ def is_spice_vector(text, elem_type, size=None, values_range=None, check_duplica
             if len(matrix) != len(set(matrix)):
                 return False, "Duplicated values"
 
-    except:
-        return False
+    except Exception as ex:
+        return False, str(ex)
 
     return True
+
+
+def has_valid_type(elem, elem_type):
+    if elem_type == "date_str":
+        elem_type = str
+
+    elem_types = [elem_type]
+    if isinstance(elem_type, list):
+        elem_types = elem_type
+
+    valid_type = False
+    for e_type in elem_types:
+        if isinstance(elem, e_type):
+            valid_type = True
+            break
+    return valid_type
 
 
 def is_number(value_s):
@@ -1158,6 +1252,25 @@ def check_instruments_definitions(data_text, sections_map, ik_path):
     ins_are_valid = True
     if len(instruments):
 
+        ins_section_patterns = ["@IN@Naming Conventions"]
+        ins_sections = get_matched_sections(sections_map, ins_section_patterns)
+
+        # Check that instrument Ids and name are in the comments sections
+        for ins_id in instruments:
+            for section in ins_sections:
+
+                if str(ins_id) not in section[1]:
+                    print("ERROR: INSTRUMENT ID Code: " + str(ins_id) +
+                          " not found at section: '" + section[0] + "' at " + ik_path)
+                    ins_are_valid = False
+
+                if "name" in instruments[ins_id]:
+                    ins_name = instruments[ins_id]["name"]
+                    if ins_name not in section[1]:
+                        print("ERROR: INSTRUMENT NAME: " + ins_name +
+                              " not found at section: '" + section[0] + "' at " + ik_path)
+                        ins_are_valid = False
+
         # Validate each instrument definition
         keyword_indent = None  # Must be the same for all instruments
 
@@ -1172,3 +1285,80 @@ def check_instruments_definitions(data_text, sections_map, ik_path):
                 ins_are_valid = False
 
     return ins_are_valid
+
+
+def check_sites_definitions(data_text, sections_map, spk_path):
+    try:
+        sites = get_sites_definitions_from_text(data_text)
+    except Exception as ex:
+        print("ERROR!! - Obtaining sites definitions from: " + spk_path + " , exception: " + str(ex))
+        return False
+
+    sites_are_valid = True
+    if len(sites):
+
+        sites_section_patterns = ["Structure location specification -- Definitions",
+                                  "Coordinates"]
+        sites_sections = get_matched_sections(sections_map, sites_section_patterns)
+
+        # Check that site Ids and site names are in the comments sections
+        for site_name in sites.keys():
+
+            id_code = None
+            if "{name}_IDCODE" in sites[site_name]["keywords"]:
+                id_code = sites[site_name]["keywords"]["{name}_IDCODE"]["value"]
+                if is_number(id_code) and id_code not in FOUND_NAIF_IDS:
+                    FOUND_NAIF_IDS.append(int(id_code))
+
+            for section in sites_sections:
+
+                if section[0] != "Coordinates":
+                    if site_name not in section[1]:
+                        print("ERROR: SITE Name: '" + site_name +
+                              "' not found at section: '" + section[0] + "' at " + spk_path)
+                        sites_are_valid = False
+
+                if id_code is not None:
+                    if str(id_code) not in section[1]:
+                        print("ERROR: SITE IDCODE: " + str(id_code) +
+                              " not found at section: '" + section[0] + "' at " + spk_path)
+                        sites_are_valid = False
+
+                if "{name}_FRAME" in sites[site_name]["keywords"]:
+                    frmae_name = sites[site_name]["keywords"]["{name}_FRAME"]["value"].replace("'", "")
+                    if frmae_name not in section[1]:
+                        print("ERROR: SITE FRAME: '" + frmae_name +
+                              "' not found at section: '" + section[0] + "' at " + spk_path)
+                        sites_are_valid = False
+
+                if section[0] == "Coordinates":
+                    if "{name}_CENTER" in sites[site_name]["keywords"]:
+                        center = sites[site_name]["keywords"]["{name}_CENTER"]["value"]
+                        if str(center) not in section[1]:
+                            print("ERROR: SITE CENTER: " + str(center) +
+                                  " not found at section: '" + section[0] + "' at " + spk_path)
+                            sites_are_valid = False
+
+        # Validate each site definition
+        keyword_indent = None  # Must be the same for all instruments
+
+        for site_name in sites:
+
+            keyword_indent = check_keywords_indentation(sites[site_name]["keywords"], keyword_indent, spk_path)
+
+            site_is_valid = check_kernel_keywords(sites[site_name], "sites_Any",
+                                                  PINPOINT_DEFINITION_KEYWORDS, spk_path)
+
+            if not site_is_valid:
+                sites_are_valid = False
+
+    return sites_are_valid
+
+
+def get_matched_sections(sections_map, section_patterns):
+    sections = []
+    for sec_pattern in section_patterns:
+        sec_name, sec_text = get_section_from_sections_map(sec_pattern, sections_map)
+        if sec_name is not None:
+            sections.append([sec_name, sec_text])
+    return sections

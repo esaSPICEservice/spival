@@ -331,29 +331,6 @@ def extension2PDS3type(kernel):
     return kernel_type
 
 
-def mk2list(mk):
-
-    path_symbol = ''
-    ker_mk_list = []
-    with open(mk, 'r') as f:
-        for line in f:
-
-            if path_symbol:
-                if path_symbol in line:
-
-                    kernel = line.split(path_symbol)[1]
-                    kernel = kernel.strip()
-                    kernel = kernel[:-1]
-                    kernel = kernel.split('/')[-1]
-
-                    ker_mk_list.append(kernel)
-
-            if 'PATH_SYMBOLS' in line.upper():
-                path_symbol = '$' + line.split("'")[1]
-
-    return ker_mk_list
-
-
 def add_carriage_return(line):
     #
     # Adding CR to line
@@ -393,7 +370,11 @@ def has_badchars(file_path):
     return badchars_detected
 
 
-def exceeds_line_lengths(file, max_length=MAX_LINE_LENGTH, ignore_lines=[]):
+def exceeds_line_lengths(file, max_length=MAX_LINE_LENGTH, ignore_lines=None):
+
+    if ignore_lines is None:
+        ignore_lines = []
+
     f = open(file).readlines()
     linen = 0
     has_long_lines = False
@@ -509,7 +490,7 @@ def get_date_from_filename(filename, date_format):
 
 
 def safe_make_directory(i):
-    '''Makes a folder if not present'''
+    """Makes a folder if not present"""
     try:
         os.mkdir(i)
     except:
@@ -657,18 +638,24 @@ def read_all_text(file_path):
     return text
 
 
+def get_kernel_comments(kernel_path, directories=None):
+
+    # First check if is a binary kernel or text kernel
+    name, extension = os.path.splitext(kernel_path)
+    if str(extension).lower().startswith(".t"):
+        # Is a text kernel, just read the file:
+        kernel_comments = read_all_text(kernel_path)
+    else:
+        # Shall be a binary kernel, use commnt read:
+        kernel_comments = commnt_read(kernel_path, directories)
+
+    return kernel_comments
+
+
 def get_section_text_from_kernel_comments(kernel_path, section_name, directories=None):
     try:
 
-        # First check if is a binary kernel or text kernel
-        name, extension = os.path.splitext(kernel_path)
-        if str(extension).lower().startswith(".t"):
-            # Is a text kernel, just read the file:
-            kernel_comments = read_all_text(kernel_path)
-        else:
-            # Shall be a binary kernel, use commnt read:
-            kernel_comments = commnt_read(kernel_path, directories)
-
+        kernel_comments = get_kernel_comments(kernel_path, directories)
         kernel_comments = kernel_comments.splitlines()
 
         section_text = ""
@@ -718,15 +705,9 @@ def files_are_equal(file1, file2):
     return md5(file1) == md5(file2)
 
 
-def get_data_text_from_text_kernel(kernel_path):
+def get_text_and_data_from_kernel(kernel_path):
 
-    # First check if is a text kernel
-    name, extension = os.path.splitext(kernel_path)
-    if not str(extension).lower().startswith(".t"):
-        raise Exception("Wrong text kernel extension: " + kernel_path)
-
-    # Is a text kernel, just read the file:
-    text = read_all_text(kernel_path)
+    text = get_kernel_comments(kernel_path)
 
     inside_data_section = False
     data_text = ""
@@ -971,7 +952,6 @@ def get_frames_definitions_from_text(text):
     last_used_id = None
     curr_var = ""
     used_id = ""
-    line_nr = 0
     indent_break = False
     for line in text.splitlines():
         if "=" in line:
@@ -1028,7 +1008,6 @@ def get_frames_definitions_from_text(text):
                         # Remove blank lines at borders
                         frames[last_frame_id]["definition"] = frames[last_frame_id]["definition"].rstrip()
 
-                    line_nr = 0
                     frames[frame_id] = {"id": frame_id,
                                         "definition": "",
                                         "keywords": {}}
@@ -1063,7 +1042,7 @@ def get_frames_definitions_from_text(text):
                                     "used_id": used_id,
                                     "var": curr_var,
                                     "value": curr_value,
-                                    "line_nr": line_nr,
+                                    "line_nr": len(frames[frame_id]["keywords"]),
                                     "keyword_indent": line.index(curr_var),
                                     "equal_indent": line.index("="),
                                     "value_indent": line.replace(curr_var, "#" * len(curr_var)).index(tokens[2]),
@@ -1078,7 +1057,6 @@ def get_frames_definitions_from_text(text):
 
                 last_frame_id = frame_id
                 last_used_id = used_id
-                line_nr += 1
                 indent_break = False
 
         elif len(line.strip()):
@@ -1153,7 +1131,6 @@ def get_instruments_definitions_from_text(text):
     instrument_name2id = {}
     last_ins_id = None
     curr_var = ""
-    line_nr = 0
     indent_break = False
     for line in text.splitlines():
         if "=" in line:
@@ -1164,8 +1141,7 @@ def get_instruments_definitions_from_text(text):
             if curr_var.startswith("NAIF_") \
                    or curr_var.startswith("SCLK") \
                    or curr_var.startswith("OBJECT"):
-               # Name to Id, SCLK or Object association line, ignore them
-               continue
+                continue  # Name to Id, SCLK or Object association line, ignore them
 
             if not tokens[1] == "=":
                 raise Exception("Wrong line format: " + line)
@@ -1189,7 +1165,6 @@ def get_instruments_definitions_from_text(text):
                         # Remove blank lines at borders
                         instruments[last_ins_id]["definition"] = instruments[last_ins_id]["definition"].rstrip()
 
-                    line_nr = 0
                     instruments[ins_id] = {"id": ins_id,
                                             "definition": "",
                                             "keywords": {}}
@@ -1216,7 +1191,7 @@ def get_instruments_definitions_from_text(text):
                                     "id": ins_id,
                                     "var": curr_var,
                                     "value": curr_value,
-                                    "line_nr": line_nr,
+                                    "line_nr": len(instruments[ins_id]["keywords"]),
                                     "keyword_indent": line.index(curr_var),
                                     "equal_indent": line.index("="),
                                     "value_indent": line.replace(curr_var, "#" * len(curr_var)).index(tokens[2]),
@@ -1230,7 +1205,6 @@ def get_instruments_definitions_from_text(text):
                     raise Exception("Duplicated keyword: " + curr_var + " at line: '" + line)
 
                 last_ins_id = ins_id
-                line_nr += 1
                 indent_break = False
 
         elif len(line.strip()):
@@ -1264,3 +1238,86 @@ def get_instruments_definitions_from_text(text):
         instruments[last_ins_id]["definition"] = instruments[last_ins_id]["definition"].rstrip()
 
     return instruments
+
+
+def get_sites_definitions_from_text(text):
+    sites = {}
+    curr_site_name = None
+    last_site_name = None
+    for line in text.splitlines():
+        if "=" in line:
+            tokens = line.replace("+=", "=").split()
+            curr_var = tokens[0].strip()
+            curr_value = line.split("=")[1].strip()
+
+            if not tokens[1] == "=":
+                raise Exception("Wrong line format: " + line)
+
+            try:
+                if curr_var == "SITES":
+                    curr_value_parts = curr_value.split("'")
+                    if len(curr_value_parts) == 3 \
+                            and "(" in curr_value_parts[0] \
+                            and len(curr_value_parts[1]) \
+                            and ")" in curr_value_parts[2]:
+
+                        # Get site name from value
+                        curr_site_name = curr_value_parts[1]
+                    else:
+                        raise Exception("Wrong SITES format: " + line)
+
+            except Exception as ex:
+                raise Exception("Wrong SITES at line: '" + line + "' , ex: " + str(ex))
+
+            if curr_site_name is None:
+                raise Exception("SITE NAME not set, at line: '" + line + "'")
+
+            else:
+
+                if curr_site_name not in sites:
+                    if last_site_name is not None \
+                            and curr_site_name != last_site_name:
+                        # Remove blank lines at borders
+                        sites[last_site_name]["definition"] = sites[last_site_name]["definition"].rstrip()
+                        last_site_name = curr_site_name
+
+                    sites[curr_site_name] = {"name": curr_site_name,
+                                             "definition": "",
+                                             "keywords": {}}
+
+                if not sites[curr_site_name]["definition"].endswith("\n"):
+                    sites[curr_site_name]["definition"] += "\n"
+                sites[curr_site_name]["definition"] += line + "\n"
+
+                keyword = curr_var.replace(curr_site_name, "{name}")
+
+                if keyword not in sites[curr_site_name]["keywords"]:
+
+                    keyword_data = {
+                                    "keyword": keyword,
+                                    "var": curr_var,
+                                    "value": curr_value,
+                                    "line_nr": len(sites[curr_site_name]["keywords"]),
+                                    "keyword_indent": line.index(curr_var),
+                                    "equal_indent": line.index("="),
+                                    "value_indent": line.replace(curr_var, "#" * len(curr_var)).index(tokens[2]),
+                                    "line": line
+                                    }
+
+                    sites[curr_site_name]["keywords"][keyword] = keyword_data
+
+                else:
+                    raise Exception("Duplicated keyword: " + curr_var + " at line: '" + line)
+
+        elif len(line.strip()):
+            raise Exception("Unexpected line in sites definition: '" + line + "'")
+
+        elif curr_site_name is not None:
+            # Just un case there are blank lines, link them to the definition for later checks
+            sites[curr_site_name]["definition"] += line + "\n"
+
+    if last_site_name is not None:
+        # Remove blank lines at borders
+        sites[last_site_name]["definition"] = sites[last_site_name]["definition"].rstrip()
+
+    return sites

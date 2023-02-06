@@ -88,6 +88,8 @@ def validate_files(files):
 
                 elif extension in KERNEL_EXTENSIONS:
 
+                    # TODO: CHECK IS LATEST VERSION OF THE KERNEL ELSE DO NOTHING
+
                     if not is_valid_kernel(filename,
                                            CHECK_LINE_LENGTHS, CHECK_INDENTATION, CHECK_TRAILING_CHARS):
                         all_files_are_valid = False

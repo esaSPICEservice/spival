@@ -59,7 +59,24 @@ REQUIRED_SECTIONS = {"FK": ["Version and Date",
                             "Implementation Notes",
                             "Naming Conventions",
                             "Mounting Alignment",
-                            "Description"]}
+                            "Description"],
+                     "SPK_PINPOINT": ["Version and Date",
+                                      "Contact Information",
+                                      "References",
+                                      "Related SPICE Kernels",
+                                      "Structure location specification -- Definitions",
+                                      "Coordinates",
+                                      "PINPOINT Input"],
+                     "SPK_OEM2SPK": ["Objects",
+                                     "Approximate Time Coverage",
+                                     "Status",
+                                     "Pedigree",
+                                     "Usage",
+                                     "Accuracy",
+                                     "References",
+                                     "Contact Information",
+                                     "OEM2SPK Setup Parameters"]
+                     }
 
 REPLACE_TOKENS = ["id", "name", "used_id"]
 
@@ -103,12 +120,12 @@ FRAME_DEFINITION_KEYWORDS = \
         "frame_class_3": [
                 {
                     "keyword": "CK_{used_id}_SCLK",
-                    "value": "=value.replace('-', '').isnumeric()",
+                    "value": "=is_number(value)",
                     "line_nr": 5
                 },
                 {
                     "keyword": "CK_{used_id}_SPK",
-                    "value": "=value.replace('-', '').isnumeric()",
+                    "value": "=is_number(value)",
                     "line_nr": 6
                 }
           ],
@@ -227,7 +244,7 @@ INSTRUMENT_DEFINITION_KEYWORDS = \
                 },
                 {
                     "keyword": "INS{id}_PLATFORM_ID",
-                    "value": "=is_number(value)",
+                    "value": "=is_spice_vector(value, int, 1)",
                     "optional": "True"
                 }
           ],
@@ -248,12 +265,12 @@ INSTRUMENT_DEFINITION_KEYWORDS = \
             },
             {
                 "keyword": "INS{id}_FOV_REF_ANGLE",
-                "value": "=is_number(value)",
+                "value": "=is_spice_vector(value, [float, int], 1)",
                 "line_nr": 6
             },
             {
                 "keyword": "INS{id}_FOV_CROSS_ANGLE",
-                "value": "=is_number(value)",
+                "value": "=is_spice_vector(value, [float, int], 1)",
                 "optional": "def_obj['fov_shape'] == 'CIRCLE'",
                 "line_nr": 7
             },
@@ -266,4 +283,38 @@ INSTRUMENT_DEFINITION_KEYWORDS = \
         ]
     }
 
-
+PINPOINT_DEFINITION_KEYWORDS = \
+    {
+        "sites_Any": [
+                {
+                    "keyword": "SITES",
+                    "value": "=is_spice_vector(value, str, 1, ['{name}'])",
+                    "line_nr": 0
+                },
+                {
+                    "keyword": "{name}_IDCODE",
+                    "value": "=is_number(value)",
+                    "line_nr": 1
+                },
+                {
+                    "keyword": "{name}_CENTER",
+                    "value": "NAIF_ID",
+                    "line_nr": 2
+                },
+                {
+                    "keyword": "{name}_FRAME",
+                    "value": "FRAME_NAME",
+                    "line_nr": 3
+                },
+                {
+                    "keyword": "{name}_XYZ",
+                    "value": "=is_spice_vector(value, [float, int], 3)",
+                    "line_nr": 4
+                },
+                {
+                    "keyword": "{name}_BOUNDS",
+                    "value": "=is_spice_vector(value, 'date_str', 2)",
+                    "line_nr": 5
+                }
+          ],
+    }
