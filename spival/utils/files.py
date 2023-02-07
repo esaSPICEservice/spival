@@ -13,6 +13,8 @@ from datetime import datetime
 from shutil import move, copyfile
 from tempfile import mkstemp
 
+from spival.utils.skd_val_logger import log_error, log_warn
+
 MAX_LINE_LENGTH = 80
 BAD_CHAR_KEYWORDS = ["<<<<<<< ", ">>>>>>> "]
 
@@ -356,14 +358,13 @@ def has_badchars(file_path):
         for i in range(0, len(line), 1):
             e = line[i]
             if (re.sub('[ -~]', '', e)) != "" and e != '\n':
-                print('ERROR!! - NON ASCII CHAR: \'' + e + '\' detected in file: ' + file_path
-                      + " at line: " + str(linen))
+                log_error("BAD_CHAR", "NON ASCII CHAR: \'" + e + "\' detected at line: " + str(linen), file_path)
                 badchars_detected = True
 
         for bad_char_keyword in BAD_CHAR_KEYWORDS:
             if bad_char_keyword in line:
-                print('ERROR!! - BAD_CHAR_KEYWORD found: \'' + bad_char_keyword + '\' detected in file: '
-                      + file_path + " at line: " + str(linen))
+                log_error("BAD_CHAR", " BAD_CHAR_KEYWORD found: \'" + bad_char_keyword +
+                          "\' detected at line: " + str(linen), file_path)
                 badchars_detected = True
 
     file.close()
@@ -389,8 +390,7 @@ def exceeds_line_lengths(file, max_length=MAX_LINE_LENGTH, ignore_lines=None):
                     break
 
             if not line_ignored:
-                print('ERROR!! - EXCEEDS LINE LENGTH: Line nr: ' + str(linen) + ' in file ' + file)
-                print(f[i])
+                log_error("EXCEEDS_LINE_LENGTH", f[i] + "\n Line nr: " + str(linen), file)
                 has_long_lines = True
 
     return has_long_lines
@@ -405,8 +405,7 @@ def validate_indentation(file, indentation=3):
         line = f[i].replace('\n', '')
         spaces = len(line) - len(line.lstrip())
         if spaces and spaces % indentation != 0:
-            print('WARNING!! - WRONG INDENTATION: Line nr: ' + str(linen) + ' in file ' + file)
-            print("'" + line + "'")
+            log_warn("WRONG_INDENTATION", "WRONG INDENTATION: Line nr: " + str(linen) + "\n'" + line + "'", file)
             has_wrong_indentation = True
 
     return has_wrong_indentation
@@ -421,9 +420,8 @@ def validate_trailing_chars(file):
         line = f[i].replace('\n', '')
         trailing_chars = len(line) - len(line.rstrip())
         if trailing_chars > 0:
-            print('WARNING!! - Found ' + str(trailing_chars) + ' trailing char at Line nr: '
-                  + str(linen) + ' in file ' + file)
-            print("'" + line + "'")
+            log_warn("TRAILING_CHARS", "Found " + str(trailing_chars) + " trailing char at Line nr: " +
+                     str(linen) + "\n'" + line + "'", file)
             has_trailing_chars = True
 
     return has_trailing_chars
@@ -780,7 +778,7 @@ def get_sections_map_from_kernel_comments(kernel_comments):
         return None
 
 
-def matches_string(input_str, match_patter):
+def matches_string(input_str, match_pattern):
     # NOTE:
     # match_patter string could have one of the following syntax's:
     # @SW@text -> Checks input_str starts with text
@@ -788,19 +786,29 @@ def matches_string(input_str, match_patter):
     # @IN@text -> Checks input_str contains text
     # text -> Checks input_str is equal to text
 
-    match_patter = str(match_patter)
-    if match_patter.startswith("@SW@"):
-        return input_str.startswith(match_patter.replace("@SW@", ""))
-    elif match_patter.startswith("@EW@"):
-        return input_str.endswith(match_patter.replace("@EW@", ""))
-    elif match_patter.startswith("@IN@"):
-        return match_patter.replace("@IN@", "") in input_str
+    match_patterns = [match_pattern]
+    if "||" in match_pattern:
+        match_patterns = match_pattern.split("||")
 
-    return match_patter == input_str
+    for pattern in match_patterns:
+        pattern = str(pattern)
+
+        if pattern.startswith("@SW@"):
+            matched = input_str.startswith(pattern.replace("@SW@", ""))
+        elif pattern.startswith("@EW@"):
+            matched = input_str.endswith(pattern.replace("@EW@", ""))
+        elif pattern.startswith("@IN@"):
+            matched = pattern.replace("@IN@", "") in input_str
+        else:
+            matched = pattern == input_str
+
+        if matched:
+            return True
+
+    return False
 
 
 def get_section_from_sections_map(section_pattern, sections_map):
-
     for section_name in sections_map:
         if matches_string(section_name, section_pattern):
             return section_name, sections_map[section_name]

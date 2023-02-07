@@ -18,7 +18,7 @@ from spival.utils.files import is_empty_file, \
 
 # Modification of:
 # https://spiceypy.readthedocs.io/en/main/other_stuff.html#lesson-1-kernel-management-with-the-kernel-subsystem
-
+from spival.utils.skd_val_logger import log_error, log_info, log_warn
 
 FOUND_NAIF_IDS = []
 FOUND_FRAME_IDS = []
@@ -123,23 +123,23 @@ def is_valid_kernel(kernel_file, check_line_length=True, check_indentation=True,
         if extension in KERNEL_TEXT_EXTENSIONS:
             if not is_valid_text_kernel(kernel_file,
                                         check_line_length, check_indentation, check_trailing_chars):
-                print("ERROR!! - NOT A VALID TEXT KERNEL: " + kernel_file)
+                log_error("INVALID_TEXT_KERNEL", "Invalid text kernel.", kernel_file)
                 is_valid = False
 
         else:
             # Is a binary kernel file, extract comments:
             if not is_valid_binary_kernel(kernel_file,
                                           check_line_length, check_indentation, check_trailing_chars):
-                print("ERROR!! - NOT A VALID BINARY KERNEL: " + kernel_file)
+                log_error("INVALID_BINARY_KERNEL", "Invalid binary kernel.", kernel_file)
                 is_valid = False
 
         if is_mk_file(kernel_file):
             if not is_valid_metakernel(kernel_file):
-                print("ERROR!! - WRONG META-KERNEL: " + kernel_file)
+                log_error("INVALID_METAKERNEL", "Invalid meta-kernel.", kernel_file)
                 is_valid = False
 
     else:
-        print("ERROR!! - NOT A KERNEL EXTENSION: " + extension + " for file " + kernel_file)
+        log_error("WRONG_KERNEL_EXTENSION", "Invalid kernel extension: " + extension, kernel_file)
         is_valid = False
 
     return is_valid
@@ -162,15 +162,15 @@ def is_valid_text_kernel(filename, check_line_length=True, check_indentation=Tru
 
     if is_fk_file(filename):
         if not is_valid_frames_kernel(filename):
-            print("ERROR!! - WRONG FRAMES-KERNEL: " + filename)
+            log_error("INVALID_FRAMES_KERNEL", "Invalid frames kernel.", filename)
             is_valid = False
 
     elif is_ik_file(filename):
         if not is_valid_instruments_kernel(filename):
-            print("ERROR!! - WRONG INSTRUMENTS-KERNEL: " + filename)
+            log_error("INVALID_INSTRUMENTS_KERNEL", "Invalid instruments kernel.", filename)
             is_valid = False
 
-    # TODO: Continue implementation
+    # TODO: Do specific checks for text PCKs and SCLKs
 
     return is_valid
 
@@ -178,27 +178,27 @@ def is_valid_text_kernel(filename, check_line_length=True, check_indentation=Tru
 def is_valid_comment_file(filename, check_line_length=True, check_indentation=True, check_trailing_chars=True):
 
     if is_empty_file(filename):
-        print("ERROR!! - EMPTY FILE: " + filename)
+        log_error("EMPTY_FILE", "File comments are empty", filename)
         return False
 
     is_valid = True
     if has_badchars(filename):
-        print("ERROR!! - HAS BAD CHARS: " + filename)
+        log_error("HAS_BAD_CHARS", "Has bad chars.", filename)
         is_valid = False
 
     if check_line_length:
         if exceeds_line_lengths(filename, ignore_lines=COMMENTS_FILE_IGNORE_LINES):
-            print("ERROR!! - EXCEEDS LINE LENGTH: " + filename)
+            log_error("HAS_LONG_LINES", "Has long lines.", filename)
             is_valid = False
 
     if check_indentation:
         if validate_indentation(filename, indentation=3):
-            print("ERROR!! - HAS WRONG INDENTATION: " + filename)
+            log_error("HAS_WRONG_INDENTATION", "Has wrong indentation.", filename)
             is_valid = False
 
     if check_trailing_chars:
         if validate_trailing_chars(filename):
-            print("ERROR!! - HAS TRAILING CHARS: " + filename)
+            log_error("HAS_TRAILING_CHARS", "Has trailing chars.", filename)
             is_valid = False
 
     # TODO: Continue implementation
@@ -216,8 +216,6 @@ def is_valid_binary_kernel(filename, check_line_length=True, check_indentation=T
 
     is_valid = is_valid_comment_file(comment_filename,
                                      check_line_length, check_indentation, check_trailing_chars)
-    if not is_valid:
-        print("ERROR!! - WRONG COMMENTS: " + filename)
     os.remove(comment_filename)
 
     if not has_valid_version_and_date_section(filename):
@@ -228,8 +226,15 @@ def is_valid_binary_kernel(filename, check_line_length=True, check_indentation=T
 
     if is_spk_file(filename):
         if not is_valid_spk_kernel(filename):
-            print("ERROR!! - WRONG SPK-KERNEL: " + filename)
+            log_error("INVALID_SPK_KERNEL", "Invalid SPK kernel.", filename)
             is_valid = False
+
+    elif is_ck_file(filename):
+        if not is_valid_ck_kernel(filename):
+            log_error("INVALID_CK_KERNEL", "Invalid CK kernel.", filename)
+            is_valid = False
+
+    # TODO: Do specific checks for Binary PCKs
 
     return is_valid
 
@@ -239,12 +244,13 @@ def is_valid_metakernel(mk_path):
     is_valid_mk = True
     prev_cwd = os.getcwd()
 
+    abspath = os.path.abspath(mk_path)
+    dname = os.path.dirname(abspath)
+    mk_filename = os.path.basename(abspath)
+
     try:
         # Load the meta kernel then use KTOTAL to interrogate the SPICE
         # kernel subsystem.
-        abspath = os.path.abspath(mk_path)
-        dname = os.path.dirname(abspath)
-        mk_filename = os.path.basename(abspath)
         filename, extension = os.path.splitext(mk_filename)
         os.chdir(dname)
         spiceypy.furnsh(mk_filename)
@@ -264,7 +270,7 @@ def is_valid_metakernel(mk_path):
             if k_filename not in loaded_files:
                 loaded_files.append(k_filename)
             else:
-                print("ERROR: Duplicated kernel: " + str(k_file) + " in MK filename: " + mk_filename)
+                log_error("WRONG_MK", "Duplicated kernel: " + str(k_file) + " in MK", mk_filename)
                 is_valid_mk = False
 
         # Lets write the first 10000 variables and their values
@@ -306,30 +312,31 @@ def is_valid_metakernel(mk_path):
                     # Check filename aligned with SKD_VERSION for MKs with version
                     if is_versioned_mk(mk_filename):
                         if not filename.endswith(str(cvars[0])):
-                            print("ERROR: Variable SKD_VERSION: " + str(cvars[0]) +
-                                  " doesn't match MK filename: " + mk_filename)
+                            log_error("WRONG_MK", "Variable SKD_VERSION: " + str(cvars[0]) +
+                                      " doesn't match MK filename: " + mk_filename, mk_filename)
                             is_valid_mk = False
                     else:
                         # Check that an MK with name MK_IDENTIFIER exists in the MKs path
                         related_mk = filename + "_" + str(cvars[0]) + extension
                         if not os.path.exists(related_mk):
-                            print("ERROR: No MK ( " + related_mk + " ) with version found for "
-                                  "SKD_VERSION: " + str(cvars[0]) + " at MK filename: " + mk_filename)
+                            log_error("WRONG_MK", "No MK ( " + related_mk + " ) with version found for "
+                                      "SKD_VERSION: " + str(cvars[0]) + " at MK filename: " + mk_filename, mk_filename)
                             is_valid_mk = False
 
                 elif cval == "MK_IDENTIFIER":
                     if is_versioned_mk(mk_filename):
                         # Check filename aligned with MK_IDENTIFIER for MKs with version
                         if str(cvars[0]) != filename:
-                            print("ERROR: Variable MK_IDENTIFIER: " + str(cvars[0]) +
-                                  " doesn't match MK filename: " + mk_filename)
+                            log_error("WRONG_MK", "Variable MK_IDENTIFIER: " + str(cvars[0]) +
+                                        " doesn't match MK filename: " + mk_filename, mk_filename)
                             is_valid_mk = False
                     else:
                         # Check that an MK with name MK_IDENTIFIER exists in the MKs path
                         related_mk = str(cvars[0]) + extension
                         if not os.path.exists(related_mk):
-                            print("ERROR: No MK ( " + related_mk + " ) with version found for "
-                                  "MK_IDENTIFIER: " + str(cvars[0]) + " at MK filename: " + mk_filename)
+                            log_error("WRONG_MK", "No MK ( " + related_mk + " ) with version found for "
+                                        "MK_IDENTIFIER: " + str(cvars[0]) + " at MK filename: " + mk_filename,
+                                      mk_filename)
                             is_valid_mk = False
 
             else:
@@ -337,8 +344,7 @@ def is_valid_metakernel(mk_path):
                 #
                 # This block should never execute.
                 #
-                print("ERROR!! - WRONG META-KERNEL: Unknonw var type: " + str(type) +
-                      " at variable " + str(cval) + " in mk: " + mk_path)
+                log_error("WRONG_MK", "Unknown var type: " + str(type) + " at variable " + str(cval), mk_filename)
                 is_valid_mk = False
 
         # Now unload the meta kernel. This action unloads all
@@ -346,7 +352,7 @@ def is_valid_metakernel(mk_path):
         spiceypy.unload(mk_filename)
 
     except SpiceyError as err:
-        print("ERROR!! - WRONG META-KERNEL: Raised exception: " + str(err) + " in mk: " + mk_path)
+        log_error("WRONG_MK", "Raised exception: " + str(err) + " in mk: " + mk_path, mk_filename)
         is_valid_mk = False
 
     # Done. Unload the kernels.
@@ -360,8 +366,8 @@ def has_valid_text_kernel_header(kernel_file):
     f = open(kernel_file).readlines()
     extension = str(os.path.splitext(kernel_file)[1]).lower()
     if not KERNEL_TEXT_HEADERS[extension] in f[0]:
-        print('ERROR!! - WRONG KERNEL HEADER: ' + f[0] + " instead of " +
-              KERNEL_TEXT_HEADERS[extension] + " for text kernel: " + kernel_file)
+        log_error("WRONG_KERNEL_HEADER", "WRONG KERNEL HEADER: " + f[0] + " instead of " +
+                    KERNEL_TEXT_HEADERS[extension] + " for text kernel: " + kernel_file, kernel_file)
         return False
 
     return True
@@ -380,7 +386,8 @@ def has_valid_version_and_date_section(kernel_file):
     text = get_section_text_from_kernel_comments(kernel_file, "Version and Date")
     if not len(text):
         if mandatory:
-            print("ERROR: No 'Version and Date' section found in kernel: " + kernel_file)
+            log_error("WRONG_VERSION_SECTION", "No 'Version and Date' section found in kernel: " + kernel_file,
+                      kernel_file)
             return False
         else:
             return True
@@ -393,7 +400,8 @@ def has_valid_version_and_date_section(kernel_file):
             # the version by 10 because in 'Version and Date' section shall appear like 3.0 -> 30
             multiplier = 10
     except Exception as ex:
-        print("ERROR: Could not obtain kernel version from kernel: " + kernel_file + " , ex: " + str(ex))
+        log_error("WRONG_VERSION_SECTION", "Could not obtain kernel version from kernel: " + kernel_file
+                  + " , ex: " + str(ex), kernel_file)
         return False
 
     tmp_kernel_version = kernel_version * multiplier
@@ -409,24 +417,30 @@ def has_valid_version_and_date_section(kernel_file):
                 version = int(line.split("--")[0].strip().replace("Version", "").strip().replace(".", ""))
 
                 if version > tmp_kernel_version:
-                    print("ERROR: Version in 'Version and Date' section is greater than expected "
-                          "in kernel: " + kernel_file + " with version: " + str(kernel_version) + ", at line: " + line)
+                    log_error("WRONG_VERSION_SECTION",
+                              "Version in 'Version and Date' section is greater than expected "
+                                "in kernel: " + kernel_file + " with version: " + str(kernel_version)
+                                + ", at line: " + line, kernel_file)
                     return False
 
                 if version < tmp_kernel_version:
-                    print("ERROR: Version in 'Version and Date' section is smaller than expected "
-                          "in kernel: " + kernel_file + " with version: " + str(kernel_version) + ", at line: " + line)
+                    log_error("WRONG_VERSION_SECTION",
+                              "Version in 'Version and Date' section is smaller than expected "
+                                "in kernel: " + kernel_file + " with version: " + str(kernel_version)
+                                + ", at line: " + line, kernel_file)
                     return False
 
                 tmp_kernel_version = tmp_kernel_version - multiplier
 
             except Exception:
-                print("ERROR: Wrong version text format in 'Version and Date' section found in kernel: "
-                      + kernel_file + " with version: " + str(kernel_version) + ", at line: " + line)
+                log_error("WRONG_VERSION_SECTION",
+                          "Wrong version text format in 'Version and Date' section found in kernel: "
+                          + kernel_file + " with version: " + str(kernel_version) + ", at line: " + line, kernel_file)
                 return False
 
     if tmp_kernel_version > -1:
-        print("ERROR: Missing versions in 'Version and Date' section in kernel: " + kernel_file)
+        log_error("WRONG_VERSION_SECTION",
+                  "Missing versions in 'Version and Date' section in kernel: " + kernel_file, kernel_file)
         return False
 
     return True
@@ -437,13 +451,13 @@ def has_valid_contact_section(kernel_file, mandatory=True):
     text = get_section_text_from_kernel_comments(kernel_file, "Contact Information")
     if not len(text):
         if mandatory:
-            print("ERROR: No 'Contact Information' section found in kernel: " + kernel_file)
+            log_error("WRONG_CONTACT", "No 'Contact Information' section found", kernel_file)
             return False
         else:
             return True
 
     if CONTACT not in text:
-        print("ERROR: '" + CONTACT + "' not found in 'Contact Information' section in kernel: " + kernel_file)
+        log_error("WRONG_CONTACT", "'" + CONTACT + "' not found in 'Contact Information' section", kernel_file)
         return False
 
     return True
@@ -467,20 +481,24 @@ def has_extension(path, extension):
     return str(os.path.splitext(fk_filename)[1]).lower() == extension
 
 
-def is_fk_file(fk_path):
-    return has_extension(fk_path, ".tf")
+def is_fk_file(path):
+    return has_extension(path, ".tf")
 
 
-def is_ik_file(fk_path):
-    return has_extension(fk_path, ".ti")
+def is_ik_file(path):
+    return has_extension(path, ".ti")
 
 
-def is_mk_file(mk_path):
-    return has_extension(mk_path, ".tm")
+def is_mk_file(path):
+    return has_extension(path, ".tm")
 
 
-def is_spk_file(mk_path):
-    return has_extension(mk_path, ".bsp")
+def is_spk_file(path):
+    return has_extension(path, ".bsp")
+
+
+def is_ck_file(path):
+    return has_extension(path, ".bc")
 
 
 def is_versioned_mk(mk_path):
@@ -505,7 +523,8 @@ def get_versions_history_from_release_notes_file(rel_notes_file):
 
         text = get_section_text_from_kernel_comments(rel_notes_file, "Release History")
         if not len(text):
-            print("ERROR: No 'Release History' section found in kernel: " + rel_notes_file)
+            log_error("WRONG_RELEASE_NOTES",
+                      "No 'Release History' section found in kernel: " + rel_notes_file, rel_notes_file)
             return None
 
     versions = []
@@ -538,22 +557,23 @@ def check_release_notes_version(rel_notes_file):
     is_valid = True
     if not filename.endswith("skd_current"):
         if not filename.endswith("_skd_" + version.replace("v", "").replace(".", "")):
-            print("ERROR: Filename versions: " + rel_notes_file + " doesn't match the version: " + version
-                  + " at line: " + first_line)
+            log_error("WRONG_RELEASE_NOTES",
+                      "Filename versions: " + rel_notes_file + " doesn't match the version: " + version
+                        + " at line: " + first_line, rel_notes_file)
             is_valid = False
 
     # First paragraph shall contain "(version)"
     ver_text = "(" + version.replace("v", "") + ")"
     if ver_text not in text:
-        print("ERROR: Text : " + ver_text + " not found in first paragraph of: " + rel_notes_file)
+        log_error("WRONG_RELEASE_NOTES", "Text : " + ver_text + " not found in first paragraph.", rel_notes_file)
         is_valid = False
 
     notes = get_section_text_from_kernel_comments(rel_notes_file, "Notes")
     if not len(notes):
-        print("ERROR: No 'Notes' section found in kernel: " + rel_notes_file)
+        log_error("WRONG_RELEASE_NOTES", "No 'Notes' section found in kernel.", rel_notes_file)
 
     elif version not in notes:
-        print("ERROR: Version : " + version + " not found in Notes section of: " + rel_notes_file)
+        log_error("WRONG_RELEASE_NOTES", "Version : " + version + " not found in Notes section.", rel_notes_file)
         is_valid = False
 
     return is_valid
@@ -564,25 +584,30 @@ def is_valid_frames_kernel(fk_path):
     try:
         data_text, comments = get_text_and_data_from_kernel(fk_path)
     except Exception as ex:
-        print("ERROR!! - Obtaining data text from: " + fk_path + " , exception: " + str(ex))
+        log_error("DATA_AND_COMMENTS",
+                  "Obtaining data text from: " + fk_path + " , exception: " + str(ex), fk_path)
         return False
 
     if not len(data_text):
-        print("ERROR: No data sections found in kernel: " + fk_path)
+        log_error("DATA_AND_COMMENTS",
+                  "No data sections found in kernel: " + fk_path, fk_path)
         return False
 
     if not len(comments):
-        print("ERROR: No text comments found in kernel: " + fk_path)
+        log_error("DATA_AND_COMMENTS",
+                  "No text comments found in kernel: " + fk_path, fk_path)
         return False
 
     # Don't continue if is a PINPOINT FK
     if "This file was created by PINPOINT." in comments:
-        print("Info: Not all FK checks were performed because is a PINPOINT FK: " + fk_path)
+        log_info("DATA_AND_COMMENTS",
+                  "Not all FK checks were performed because is a PINPOINT FK: " + fk_path, fk_path)
         return True
 
     sections_map = get_sections_map_from_kernel_comments(comments)
     if sections_map is None:
-        print("ERROR: Could not obtain sections from kernel: " + fk_path)
+        log_error("DATA_AND_COMMENTS",
+                  "Could not obtain sections from kernel: " + fk_path, fk_path)
         return False
 
     # Check required sections
@@ -602,20 +627,24 @@ def is_valid_instruments_kernel(ik_path):
     try:
         data_text, comments = get_text_and_data_from_kernel(ik_path)
     except Exception as ex:
-        print("ERROR!! - Obtaining data text from: " + ik_path + " , exception: " + str(ex))
+        log_error("DATA_AND_COMMENTS",
+                  "Obtaining data text from: " + ik_path + " , exception: " + str(ex), ik_path)
         return False
 
     if not len(data_text):
-        print("ERROR: No data sections found in kernel: " + ik_path)
+        log_error("DATA_AND_COMMENTS",
+                  "No data sections found in kernel: " + ik_path, ik_path)
         return False
 
     if not len(comments):
-        print("ERROR: No text comments found in kernel: " + ik_path)
+        log_error("DATA_AND_COMMENTS",
+                  "No text comments found in kernel: " + ik_path, ik_path)
         return False
 
     sections_map = get_sections_map_from_kernel_comments(comments)
     if sections_map is None:
-        print("ERROR: Could not obtain sections from kernel: " + ik_path)
+        log_error("DATA_AND_COMMENTS",
+                  "Could not obtain sections from kernel: " + ik_path, ik_path)
         return False
 
     # Check required sections
@@ -635,18 +664,21 @@ def is_valid_spk_kernel(spk_path):
     try:
         data_text, comments = get_text_and_data_from_kernel(spk_path)
     except Exception as ex:
-        print("ERROR!! - Obtaining data text from: " + spk_path + " , exception: " + str(ex))
+        log_error("DATA_AND_COMMENTS",
+                  "Obtaining data text from: " + spk_path + " , exception: " + str(ex), spk_path)
         return False
 
     if not len(comments):
-        print("ERROR: No text comments found in kernel: " + spk_path)
+        log_error("DATA_AND_COMMENTS",
+                  "No text comments found in kernel: " + spk_path, spk_path)
         return False
 
     if len(data_text):
 
         sections_map = get_sections_map_from_kernel_comments(comments)
         if sections_map is None:
-            print("ERROR: Could not obtain sections from kernel: " + spk_path)
+            log_error("DATA_AND_COMMENTS",
+                      "Could not obtain sections from kernel: " + spk_path, spk_path)
             return False
 
         if get_section_from_sections_map("@IN@PINPOINT", sections_map)[0] is not None:
@@ -672,12 +704,57 @@ def is_valid_spk_kernel(spk_path):
             return all_required_section_found
 
         else:
-            print("ERROR: SPK type not supported: " + spk_path)
+            log_error("DATA_AND_COMMENTS",
+                      "SPK type not supported: " + spk_path, spk_path)
             return False
 
     else:
         # The SPK doesn't have /begindata sections, such as some NAIF SPKs and similar.
         return True
+
+
+def is_valid_ck_kernel(ck_path):
+
+    try:
+        data_text, comments = get_text_and_data_from_kernel(ck_path)
+    except Exception as ex:
+        log_error("DATA_AND_COMMENTS",
+                  "Obtaining data text from: " + ck_path + " , exception: " + str(ex), ck_path)
+        return False
+
+    if not len(comments):
+        log_error("DATA_AND_COMMENTS",
+                  "No text comments found in kernel: " + ck_path, ck_path)
+        return False
+
+    sections_map = get_sections_map_from_kernel_comments(comments)
+    if sections_map is None:
+        log_error("DATA_AND_COMMENTS",
+                  "Could not obtain sections from kernel: " + ck_path, ck_path)
+        return False
+
+    if get_section_from_sections_map("@IN@orientation", sections_map)[0] is not None:
+        # Is a Fixed attitude CK
+        all_required_section_found = check_required_sections(sections_map,
+                                                             REQUIRED_SECTIONS["CK_FIXED"],
+                                                             ck_path)
+        return all_required_section_found
+
+    elif get_section_from_sections_map("Directions", sections_map)[0] is not None\
+            or get_section_from_sections_map("Orientations", sections_map)[0] is not None\
+            or get_section_from_sections_map("Schedule", sections_map)[0] is not None:
+        # Is a predickt CK
+        all_required_section_found = check_required_sections(sections_map,
+                                                             REQUIRED_SECTIONS["CK_PREDICKT"],
+                                                             ck_path)
+        return all_required_section_found
+
+    else:
+        # Check required sections
+        all_required_section_found = check_required_sections(sections_map,
+                                                             REQUIRED_SECTIONS["CK"],
+                                                             ck_path)
+        return all_required_section_found
 
 
 def check_required_sections(sections_map, required_sections, file_path):
@@ -687,11 +764,13 @@ def check_required_sections(sections_map, required_sections, file_path):
         sec_name, sec_text = get_section_from_sections_map(section_name, sections_map)
 
         if sec_name is None:
-            print("ERROR: Required section not found: '" + section_name + "' at " + file_path)
+            log_error("MISSING_SECTION",
+                      "Required section not found: '" + section_name + "' at " + file_path, file_path)
             all_required_section_found = False
 
         if not len(str(sec_text).strip()):
-            print("ERROR: Required section is empty: '" + section_name + "' at " + file_path)
+            log_error("MISSING_SECTION",
+                      "Required section is empty: '" + section_name + "' at " + file_path, file_path)
             all_required_section_found = False
 
     return all_required_section_found
@@ -705,7 +784,8 @@ def check_naif_id_associations(data_text, sections_map, kernel_path):
         naif_ids = get_naif_ids_from_text(data_text)
         FOUND_NAIF_IDS.extend(naif_ids)
     except Exception as ex:
-        print("ERROR!! - Obtaining NAIF IDs from: " + kernel_path + " , exception: " + str(ex))
+        log_error("NAIF_IDS",
+                  "Error while obtaining NAIF IDs from: " + kernel_path + " , exception: " + str(ex), kernel_path)
         return False
 
     if len(naif_ids):
@@ -791,7 +871,7 @@ def check_naif_id_associations(data_text, sections_map, kernel_path):
     return valid_ids
 
 
-def check_naif_id_in_section_text(naif_id, synonyms, section_name, section_text, fk_path):
+def check_naif_id_in_section_text(naif_id, synonyms, section_name, section_text, kernel_path):
 
     naif_id_is_valid = True
 
@@ -805,18 +885,18 @@ def check_naif_id_in_section_text(naif_id, synonyms, section_name, section_text,
                 generic_naif_id = str(naif_id)[0:-n_digits] + "N" * len(last_name_part)
                 generic_synonym = synonyms[0][0:-n_digits] + "N" * len(last_name_part)
                 return check_naif_id_in_section_text(generic_naif_id, [generic_synonym],
-                                                     section_name, section_text, fk_path)
+                                                     section_name, section_text, kernel_path)
 
-        print("ERROR: NAIF ID Code: " + str(naif_id) +
-              " not found at section: '" + section_name + "' at " + fk_path)
+        log_error("NAIF_IDS",
+                  "NAIF ID Code: " + str(naif_id) + " not found at section: '" + section_name, kernel_path)
         naif_id_is_valid = False
 
     for synomyn in synonyms:
         if synomyn not in section_text:
             # We need to check that the synonym has not been chunked in two lines because it has a long name
             if synomyn not in " ".join(section_text.replace("\n", " ").split()):
-                print("ERROR: NAIF BODY Name: " + str(synomyn) +
-                      " not found at section: '" + section_name + "' at " + fk_path)
+                log_error("NAIF_IDS",
+                          "NAIF BODY Name: " + str(synomyn) + " not found at section: '" + section_name, kernel_path)
                 naif_id_is_valid = False
 
     return naif_id_is_valid
@@ -832,7 +912,8 @@ def check_frame_definitions(data_text, sections_map, fk_path):
                 FOUND_FRAME_NAMES.append(frames[frame_id]["frame_name"])
 
     except Exception as ex:
-        print("ERROR!! - Obtaining frame definitions from: " + fk_path + " , exception: " + str(ex))
+        log_error("WRONG_DEFINITIONS",
+                  "Error while obtaining frame definitions from: " + fk_path + " , exception: " + str(ex), fk_path)
         return False
 
     not_found_ids = []
@@ -850,16 +931,18 @@ def check_frame_definitions(data_text, sections_map, fk_path):
             for frame_section in frame_sections:
 
                 if str(frame_id) not in frame_section[1]:
-                    print("ERROR: FRAME ID Code: " + str(frame_id) +
-                          " not found at section: '" + frame_section[0] + "' at " + fk_path)
+                    log_error("MISALIGNED_SECTION",
+                              "FRAME ID Code: " + str(frame_id) + " not found at section: '" + frame_section[0]
+                              + "' at " + fk_path, fk_path)
                     frames_are_valid = False
                     not_found_ids.append(frame_id)
 
                 if "frame_name" in frames[frame_id]:
                     frame_name = frames[frame_id]["frame_name"]
                     if frame_name not in frame_section[1]:
-                        print("ERROR: FRAME NAME: " + frame_name +
-                              " not found at section: '" + frame_section[0] + "' at " + fk_path)
+                        log_error("MISALIGNED_SECTION",
+                                  "FRAME NAME: " + frame_name + " not found at section: '" + frame_section[0]
+                                  + "' at " + fk_path, fk_path)
                         frames_are_valid = False
 
         # Validate each frame definition
@@ -911,13 +994,16 @@ def check_keywords_indentation(keywords, keyword_indent, path):
                 tmp_value_indent = tmp_value_indent - 1
 
             if keyword_data["keyword_indent"] != keyword_indent:
-                print("WARNING: WRONG INDENTATION OF KEYWORD: '" + keyword_data["var"] + "' at line: '" +
-                      keyword_data["line"] + "' at " + path)
+                log_warn("WRONG_INDENTATION",
+                          "WRONG INDENTATION OF KEYWORD: '" + keyword_data["var"] + "' at line: '" +
+                          keyword_data["line"] + "' at " + path, path)
             elif keyword_data["equal_indent"] != equal_indent:
-                print("WARNING: WRONG INDENTATION OF '=' at line: '" + keyword_data["line"] + "' at " + path)
+                log_warn("WRONG_INDENTATION",
+                         "WRONG INDENTATION OF '=' at line: '" + keyword_data["line"] + "' at " + path, path)
             elif tmp_value_indent != value_indent:
-                print("WARNING: WRONG INDENTATION OF '" + keyword_data["value"] + "' at line: '" +
-                      keyword_data["line"] + "' at " + path)
+                log_warn("WRONG_INDENTATION",
+                         "WRONG INDENTATION OF '" + keyword_data["value"] + "' at line: '" +
+                         keyword_data["line"] + "' at " + path, path)
 
     return keyword_indent
 
@@ -937,8 +1023,9 @@ def check_kernel_keywords(def_obj, keywords_ref_key, keywords_ref_map, path):
                 if eval(keyword_ref_data["optional"]):
                     continue  # Ignore this keyword in this case
 
-            print("ERROR: MISSING KEYWORD AT DEFINITION: " + keyword_ref +
-                  " not found at: \n" + def_obj["definition"] + "\n at " + path)
+            log_error("WRONG_KEYWORD",
+                      "MISSING KEYWORD AT DEFINITION: " + keyword_ref + " not found at: \n" + def_obj["definition"],
+                      path)
             keywords_valid = False
             continue
 
@@ -947,16 +1034,17 @@ def check_kernel_keywords(def_obj, keywords_ref_key, keywords_ref_map, path):
         # Check keyword validity
         var_ref = replace_tokens(keyword_ref_data["keyword"], keyword_data, def_obj)
         if keyword_data["var"] != var_ref:
-            print("ERROR: WRONG KEYWORD AT DEFINITION: " + keyword_data["var"] +
-                  " expected: '" + var_ref + "' at " + path)
+            log_error("WRONG_KEYWORD",
+                      "WRONG KEYWORD AT DEFINITION: " + keyword_data["var"] + " expected: '" + var_ref, path)
             keywords_valid = False
 
         # Check line order
         if "line_nr" in keyword_ref_data:
             if keyword_data["line_nr"] != keyword_ref_data["line_nr"]:
-                print("WARNING: WRONG LINE ORDER FOR KEYWORD '" + keyword_data["var"] + "' " +
-                      "found at line nr: " + str(keyword_data["line_nr"]) +
-                      " expected at line nr: " + str(keyword_ref_data["line_nr"]) + " at " + path)
+                log_warn("WRONG_KEYWORD_ORDER",
+                          "WRONG LINE ORDER FOR KEYWORD '" + keyword_data["var"] + "' " +
+                          "found at line nr: " + str(keyword_data["line_nr"]) +
+                          " expected at line nr: " + str(keyword_ref_data["line_nr"]), path)
 
         # Check proper value
         value = ""
@@ -967,7 +1055,7 @@ def check_kernel_keywords(def_obj, keywords_ref_key, keywords_ref_map, path):
             if isinstance(value, str):
                 # Check number of "'" in string
                 if "'" in value and len(value.split("'")) % 2 != 1:
-                    print("ERROR: WRONG NUMBER OF \"'\" FOUND AT LINE: '" + keyword_data["line"] + "' at " + path)
+                    log_error("WRONG_KEYWORD", "WRONG NUMBER OF \"'\" FOUND AT LINE: '" + keyword_data["line"], path)
                     keywords_valid = False
 
                 # Remove "'" from sting
@@ -976,17 +1064,17 @@ def check_kernel_keywords(def_obj, keywords_ref_key, keywords_ref_map, path):
             if "{" in value_ref and not value_ref.startswith("="):
                 value_ref = replace_tokens(value_ref, keyword_data, def_obj)
                 if value != value_ref:
-                    print("ERROR: WRONG VALUE FOUND AT LINE: '" + keyword_data["line"] + "' " +
-                          "found: '" + str(value) + "' expected: '" + str(value_ref)
-                          + "' at " + path)
+                    log_error("WRONG_KEYWORD",
+                              "WRONG VALUE FOUND AT LINE: '" + keyword_data["line"] + "' " +
+                              "found: '" + str(value) + "' expected: '" + str(value_ref), path)
                     keywords_valid = False
 
             elif value_ref.startswith("["):
                 value_ref = eval(value_ref)
                 if value not in value_ref:
-                    print("ERROR: WRONG VALUE FOUND AT LINE: '" + keyword_data["line"] + "' " +
-                          "found: '" + str(value) + "' expected: '" + str(value_ref)
-                          + "' at " + path)
+                    log_error("WRONG_KEYWORD",
+                              "WRONG VALUE FOUND AT LINE: '" + keyword_data["line"] + "' " +
+                              "found: '" + str(value) + "' expected: '" + str(value_ref), path)
                     keywords_valid = False
 
             elif value_ref.startswith("="):
@@ -1006,19 +1094,20 @@ def check_kernel_keywords(def_obj, keywords_ref_key, keywords_ref_map, path):
                     if reason is not None:
                         reason_text = ", reason: " + reason + " "
 
-                    print("ERROR: WRONG VALUE FOUND AT LINE: '" + keyword_data["line"] + "' " + reason_text +
-                          "found: '" + str(value) + "' expected: '" + str(value_ref)
-                          + "' at " + path)
+                    log_error("WRONG_KEYWORD",
+                              "WRONG VALUE FOUND AT LINE: '" + keyword_data["line"] + "' " + reason_text +
+                              "found: '" + str(value) + "' expected: '" + str(value_ref), path)
                     keywords_valid = False
 
             elif value_ref == "NAIF_ID":
 
                 if not is_naif_id(value):
-                    print("WARNING: WRONG VALUE FOUND AT LINE: '" + keyword_data["line"] + "' " +
-                          "found: '" + str(value) + "' expected any of defined NAIF IDs " +
-                          "at the validated kernels or any of the SPICE BUILT-IN BODY IDs.\n" +
-                          "Check if this BODY ID has been defined in other kernel.\n" +
-                          "Warning raised at " + path)
+                    log_warn("WRONG_KEYWORD",
+                              "WARNING: WRONG VALUE FOUND AT LINE: '" + keyword_data["line"] + "' " +
+                              "found: '" + str(value) + "' expected any of defined NAIF IDs " +
+                              "at the validated kernels or any of the SPICE BUILT-IN BODY IDs.\n" +
+                              "Check if this BODY ID has been defined in other kernel.\n" +
+                              "Warning raised at " + path, path)
 
             elif value_ref == "FRAME_NAME" \
                     or value_ref == "FRAME_NAME_LIST":
@@ -1026,8 +1115,9 @@ def check_kernel_keywords(def_obj, keywords_ref_key, keywords_ref_map, path):
                 frame_names = []
                 if value_ref == "FRAME_NAME_LIST":
                     if not is_spice_vector(value, str, check_duplicates=True):
-                        print("ERROR: WRONG FRAME NAME LIST FOUND AT LINE: '" + keyword_data["line"] + "' " +
-                              "found: '" + str(value) + "' at " + path)
+                        log_error("WRONG_KEYWORD",
+                                  "WRONG FRAME NAME LIST FOUND AT LINE: '" + keyword_data["line"] + "' " +
+                                  "found: '" + str(value), path)
                         keywords_valid = False
                     else:
                         frame_names.extend(spice_vector_to_tuple(value, str))
@@ -1036,11 +1126,12 @@ def check_kernel_keywords(def_obj, keywords_ref_key, keywords_ref_map, path):
 
                 for frm_name in frame_names:
                     if not is_frame_name(frm_name):
-                        print("WARNING: WRONG FRAME NAME FOUND AT LINE: '" + keyword_data["line"] + "' " +
-                              "found: '" + str(frm_name) + "' expected any of defined FRAME NAMES " +
-                              "at the validated FKs or any of the SPICE BUILT-IN FRAMES.\n" +
-                              "Check if this FRAME NAME has been defined in other kernel.\n" +
-                              "Warning raised at " + path)
+                        log_warn("WRONG_KEYWORD",
+                                  "WARNING: WRONG FRAME NAME FOUND AT LINE: '" + keyword_data["line"] + "' " +
+                                  "found: '" + str(frm_name) + "' expected any of defined FRAME NAMES " +
+                                  "at the validated FKs or any of the SPICE BUILT-IN FRAMES.\n" +
+                                  "Check if this FRAME NAME has been defined in other kernel.\n" +
+                                  "Warning raised at " + path, path)
 
             else:
                 raise NotImplementedError("Reference value not supported: " + value_ref)
@@ -1055,8 +1146,9 @@ def check_kernel_keywords(def_obj, keywords_ref_key, keywords_ref_map, path):
                     keywords_valid = False
 
             else:
-                print("WARNING: Could not check sub_keywords for key: " + sub_keywords_key
-                      + ", Warning raised at " + path)
+                log_warn("WRONG_KEYWORD",
+                         "WARNING: Could not check sub_keywords for key: " + sub_keywords_key
+                         + ", Warning raised at " + path, path)
 
     return keywords_valid
 
@@ -1246,7 +1338,8 @@ def check_instruments_definitions(data_text, sections_map, ik_path):
     try:
         instruments = get_instruments_definitions_from_text(data_text)
     except Exception as ex:
-        print("ERROR!! - Obtaining instruments definitions from: " + ik_path + " , exception: " + str(ex))
+        log_error("WRONG_DEFINITIONS",
+                  "Obtaining instruments definitions from: " + ik_path + " , exception: " + str(ex), ik_path)
         return False
 
     ins_are_valid = True
@@ -1260,15 +1353,15 @@ def check_instruments_definitions(data_text, sections_map, ik_path):
             for section in ins_sections:
 
                 if str(ins_id) not in section[1]:
-                    print("ERROR: INSTRUMENT ID Code: " + str(ins_id) +
-                          " not found at section: '" + section[0] + "' at " + ik_path)
+                    log_error("MISALIGNED_SECTION",
+                              "INSTRUMENT ID Code: " + str(ins_id) + " not found at section: '" + section[0], ik_path)
                     ins_are_valid = False
 
                 if "name" in instruments[ins_id]:
                     ins_name = instruments[ins_id]["name"]
                     if ins_name not in section[1]:
-                        print("ERROR: INSTRUMENT NAME: " + ins_name +
-                              " not found at section: '" + section[0] + "' at " + ik_path)
+                        log_error("MISALIGNED_SECTION",
+                                  "INSTRUMENT NAME: " + ins_name + " not found at section: '" + section[0], ik_path)
                         ins_are_valid = False
 
         # Validate each instrument definition
@@ -1291,7 +1384,8 @@ def check_sites_definitions(data_text, sections_map, spk_path):
     try:
         sites = get_sites_definitions_from_text(data_text)
     except Exception as ex:
-        print("ERROR!! - Obtaining sites definitions from: " + spk_path + " , exception: " + str(ex))
+        log_error("WRONG_DEFINITIONS",
+                  "Obtaining sites definitions from: " + spk_path + " , exception: " + str(ex), spk_path)
         return False
 
     sites_are_valid = True
@@ -1314,29 +1408,29 @@ def check_sites_definitions(data_text, sections_map, spk_path):
 
                 if section[0] != "Coordinates":
                     if site_name not in section[1]:
-                        print("ERROR: SITE Name: '" + site_name +
-                              "' not found at section: '" + section[0] + "' at " + spk_path)
+                        log_error("MISALIGNED_SECTION",
+                                  "SITE Name: '" + site_name + "' not found at section: '" + section[0], spk_path)
                         sites_are_valid = False
 
                 if id_code is not None:
                     if str(id_code) not in section[1]:
-                        print("ERROR: SITE IDCODE: " + str(id_code) +
-                              " not found at section: '" + section[0] + "' at " + spk_path)
+                        log_error("MISALIGNED_SECTION",
+                                  "SITE IDCODE: " + str(id_code) + " not found at section: '" + section[0], spk_path)
                         sites_are_valid = False
 
                 if "{name}_FRAME" in sites[site_name]["keywords"]:
                     frmae_name = sites[site_name]["keywords"]["{name}_FRAME"]["value"].replace("'", "")
                     if frmae_name not in section[1]:
-                        print("ERROR: SITE FRAME: '" + frmae_name +
-                              "' not found at section: '" + section[0] + "' at " + spk_path)
+                        log_error("MISALIGNED_SECTION",
+                                  "SITE FRAME: '" + frmae_name + "' not found at section: '" + section[0], spk_path)
                         sites_are_valid = False
 
                 if section[0] == "Coordinates":
                     if "{name}_CENTER" in sites[site_name]["keywords"]:
                         center = sites[site_name]["keywords"]["{name}_CENTER"]["value"]
                         if str(center) not in section[1]:
-                            print("ERROR: SITE CENTER: " + str(center) +
-                                  " not found at section: '" + section[0] + "' at " + spk_path)
+                            log_error("MISALIGNED_SECTION",
+                                      "SITE CENTER: " + str(center) + " not found at section: '" + section[0], spk_path)
                             sites_are_valid = False
 
         # Validate each site definition

@@ -6,16 +6,17 @@ from spival.utils.skd_constants import *
 from spival.utils.files import exceeds_line_lengths, has_badchars, is_empty_file, files_are_equal
 from spival.utils.skd_utils import KERNEL_EXTENSIONS, is_valid_kernel, has_valid_contact_section, get_skd_version, \
     is_versioned_mk, get_versions_history_from_release_notes_file, check_release_notes_version
+from spival.utils.skd_val_logger import log_error, log_info, write_file_report
 
 
 def is_valid_doc_file(file_path):
 
     if is_empty_file(file_path):
-        print("ERROR!! - EMPTY FILE: " + file_path)
+        log_error("EMPTY_FILE", "File is empty", file_path)
         return False
 
     if has_badchars(file_path):
-        print("ERROR!! - HAS BAD CHARS: " + file_path)
+        log_error("HAS_BAD_CHARS", "Has bad chars.", file_path)
         return False
 
     basename = os.path.basename(file_path)
@@ -25,7 +26,7 @@ def is_valid_doc_file(file_path):
 
     if CHECK_LINE_LENGTHS and extension not in LONG_LINE_EXTENSIONS:
         if exceeds_line_lengths(file_path):
-            print("ERROR!! - EXCEEDS LINE LENGTH: " + file_path)
+            log_error("HAS_LONG_LINES", "Has long lines.=", file_path)
             return False
 
     if extension == ".txt":
@@ -75,6 +76,8 @@ def validate_files(files):
         if not os.path.isdir(filename)\
            and not is_an_ingnore_file(filename):
 
+            is_valid_file = True
+
             extension = str(os.path.splitext(filename)[1]).lower()
             if extension in CHECK_EXTENSIONS:
 
@@ -82,9 +85,8 @@ def validate_files(files):
                 if extension in DOC_EXTENSIONS:
 
                     if not is_valid_doc_file(filename):
-                        all_files_are_valid = False
-                        print("")
-                        continue
+                        is_valid_file = False
+                        log_error("INVALID_DOC_FILE", "Invalid document file.", filename)
 
                 elif extension in KERNEL_EXTENSIONS:
 
@@ -92,18 +94,20 @@ def validate_files(files):
 
                     if not is_valid_kernel(filename,
                                            CHECK_LINE_LENGTHS, CHECK_INDENTATION, CHECK_TRAILING_CHARS):
-                        all_files_are_valid = False
-                        print("")
-                        continue
+                        is_valid_file = False
+                        log_error("INVALID_KERNEL_FILE", "Invalid kernel file.", filename)
 
-                if SHOW_ALL_FILES:
-                    print("OK: " + filename)
+                if is_valid_file:
+                    log_info("VALID_FILE", "File is valid.", filename)
 
             elif extension not in IGNORE_EXTENSIONS:
+                log_error("UNSUPPORTED_EXTENSION", "Extension not supported: " + extension, filename)
+                is_valid_file = False
 
-                print("ERROR!! - NOT SUPPORTED: " + filename)
-                print("")
+            if not is_valid_file:
                 all_files_are_valid = False
+
+            write_file_report(filename)
 
     return all_files_are_valid
 
@@ -113,7 +117,7 @@ def has_valid_skd_version(skd_path):
         # Get skd version from version file
         skd_version = get_skd_version(skd_path)
     except Exception as ex:
-        print('ERROR:' + str(ex))
+        log_error("SKD_VERSION", "Error obtaining SKD Version: " + str(ex), skd_path)
         return False
 
     # Check that all MKs have the correct SKD version
@@ -126,22 +130,25 @@ def has_valid_skd_version(skd_path):
     for mk_file in mk_files:
         mk_filename = os.path.basename(mk_file)
         if skd_version not in str(os.path.splitext(mk_filename)[0]).lower():
-            print('ERROR: MK file: ' + str(mk_file) + " has not the expected SKD version: " + skd_version)
+            log_error("SKD_VERSION", "MK file: '" + str(mk_file) + "' has not the expected SKD version: " + skd_version,
+                      skd_path)
             mks_has_valid_versions = False
 
     # Check that all the release notes files are named properly,
     # note that the release notes files validity is done by is_valid_doc_file()
     release_notes_dir = os.path.join(skd_path, "misc/release_notes")
     if not os.path.exists(release_notes_dir) or not os.path.isdir(release_notes_dir):
-        print('ERROR: Release notes path doesn\'t exist or is not a directory: ' + str(release_notes_dir))
+        log_error("SKD_VERSION", "Release notes path doesn\'t exist or is not a directory: " + str(release_notes_dir),
+                  skd_path)
         return False
 
     skd_current_path = list(glob.iglob(release_notes_dir + '/*_skd_current.txt', recursive=False))
     if len(skd_current_path) == 0:
-        print('ERROR: Current release notes file not found at path: ' + str(release_notes_dir))
+        log_error("SKD_VERSION", "Current release notes file not found at path: " + str(release_notes_dir), skd_path)
         return False
     elif len(skd_current_path) > 1:
-        print('ERROR: More than one files matches *_skd_current.txt in release notes path: ' + str(release_notes_dir))
+        log_error("SKD_VERSION", "More than one files matches *_skd_current.txt in release notes path: " +
+                  str(release_notes_dir), skd_path)
         return False
 
     # Check that latest release notes exists and is equal to current, note this is a workaround
@@ -154,14 +161,16 @@ def has_valid_skd_version(skd_path):
     release_notes_files = [skd_current_filename ]
     all_release_notes_found = True
     if not os.path.exists(rel_note_filepath):
-        print('ERROR: Release notes file: ' + rel_note_filename + ' not found at path: ' + str(release_notes_dir))
+        log_error("SKD_VERSION", "Release notes file: " + rel_note_filename + " not found at path: "
+                  + str(release_notes_dir), skd_path)
         all_release_notes_found = False
     else:
         release_notes_files.append(rel_note_filename)
 
         # Check tha current release notes files is aligned with latest release notes file
         if not files_are_equal(rel_note_filepath, skd_current_path):
-            print('ERROR: Release notes file: ' + rel_note_filename + ' is not equal to: ' + str(skd_current_filename))
+            log_error("SKD_VERSION", "Release notes file: " + rel_note_filename + " is not equal to: "
+                      + str(skd_current_filename), skd_path)
             all_release_notes_found = False
 
     # Check that all release notes exists
@@ -170,15 +179,16 @@ def has_valid_skd_version(skd_path):
         try:
             version_int = int(version.replace("v", "").replace(".", ""))
         except:
-            print('ERROR: Wrong version ' + version + ' retrieved from: '
-                  + skd_current_path + ' Release History section')
+            log_error("SKD_VERSION", "Wrong version " + version + " retrieved from: "
+                      + skd_current_path + " Release History section", skd_path)
             all_release_notes_found = False
             continue
 
         rel_note_filename = skd_current_filename.replace("current", "{:03d}".format(version_int))
         rel_note_filepath = os.path.join(release_notes_dir, rel_note_filename)
         if not os.path.exists(rel_note_filepath):
-            print('ERROR: Release notes file: ' + rel_note_filename + ' not found at path: ' + str(release_notes_dir))
+            log_error("SKD_VERSION", "Release notes file: " + rel_note_filename + " not found at path: " +
+                      str(release_notes_dir), skd_path)
             all_release_notes_found = False
         else:
             release_notes_files.append(rel_note_filename)
@@ -190,9 +200,10 @@ def has_valid_skd_version(skd_path):
                         if os.path.basename(file) not in release_notes_files]
 
     for unexpected_file in unexpected_files:
-        print('ERROR: Unexpected file: ' + os.path.basename(unexpected_file) + ' found at path: ' + str(release_notes_dir))
-        print('       Or the corresponding version of ' + os.path.basename(unexpected_file) + ' is not present at '
-              + skd_current_filename + ' Release History section')
+        log_error("SKD_VERSION",  "Unexpected file: " + os.path.basename(unexpected_file) + " found at path: " +
+                  str(release_notes_dir) + "\n       Or the corresponding version of " +
+                  os.path.basename(unexpected_file) + " is not present at " + skd_current_filename
+                  + " Release History section", skd_path)
         all_release_notes_found = False
 
     return mks_has_valid_versions and all_release_notes_found

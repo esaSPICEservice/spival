@@ -53,6 +53,7 @@ REQUIRED_SECTIONS = {"FK": ["Version and Date",
                             "References",
                             "Contact Information",
                             "Implementation Notes"],
+
                      "IK": ["Version and Date",
                             "References",
                             "Contact Information",
@@ -60,6 +61,7 @@ REQUIRED_SECTIONS = {"FK": ["Version and Date",
                             "Naming Conventions",
                             "Mounting Alignment",
                             "Description"],
+
                      "SPK_PINPOINT": ["Version and Date",
                                       "Contact Information",
                                       "References",
@@ -67,6 +69,7 @@ REQUIRED_SECTIONS = {"FK": ["Version and Date",
                                       "Structure location specification -- Definitions",
                                       "Coordinates",
                                       "PINPOINT Input"],
+
                      "SPK_OEM2SPK": ["Objects",
                                      "Approximate Time Coverage",
                                      "Status",
@@ -75,7 +78,26 @@ REQUIRED_SECTIONS = {"FK": ["Version and Date",
                                      "Accuracy",
                                      "References",
                                      "Contact Information",
-                                     "OEM2SPK Setup Parameters"]
+                                     "OEM2SPK Setup Parameters"],
+
+                     "CK": ["Summary||Objects",
+                            "Approximate Time Coverage||Coverage",
+                            "Status",
+                            "Pedigree",
+                            "Usage",
+                            "Accuracy",
+                            "References",
+                            "Contact Information||Contacts"],
+
+                     "CK_FIXED": ["Summary",
+                                  "Approximate Time Coverage||Coverage",
+                                  "@IN@orientation",
+                                  "Contact Information",
+                                  "References"],
+
+                     "CK_PREDICKT": ["Directions",
+                                     "Orientations",
+                                     "Schedule"]
                      }
 
 REPLACE_TOKENS = ["id", "name", "used_id"]

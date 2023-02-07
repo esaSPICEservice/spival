@@ -12,6 +12,7 @@ import git
 from spiops import spiops
 from spiops.utils.utils import get_latest_kernel
 from spival.core.skd_validator import validate_files
+from spival.utils.skd_val_logger import write_final_report
 from spival.utils.utils import fill_template
 
 
@@ -450,6 +451,8 @@ def validate(path_arr=None):
             return 0
 
         all_files_are_valid = validate_files(files)
+
+        write_final_report(path_arr, len(files))
 
         if all_files_are_valid:
             print("")
