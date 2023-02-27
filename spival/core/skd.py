@@ -220,6 +220,7 @@ def write_JUICE(config):
     # We obtain the predicted and the measured CKs
     #
     replacements['predicted_ck'] = get_latest_kernel('ck', config['skd_path'], config['predicted_ck'])
+    replacements['crema_ck'] = get_latest_kernel('ck', config['skd_path'], config['crema_ck'])
     # replacements['measured_ck'] = get_latest_kernel('ck', config['skd_path'],'bc_mpo_sc_scm_*_s????????_v??.bc')
     replacements['reconstructed_spk'] = get_latest_kernel('spk', config['skd_path'], config['reconstructed_spk'])
 
@@ -230,7 +231,7 @@ def write_JUICE(config):
     replacements['current_time'] = now.strftime("%Y-%m-%dT%H:%M:%S")
 
     boundary = spiops.cov_ck_ker(config['skd_path'] + '/ck/' +
-                                 replacements['predicted_ck'], 'JUICE_SPACECRAFT_PLAN', time_format='UTC')
+                                 replacements['crema_ck'], 'JUICE_SPACECRAFT_PLAN', time_format='UTC')
 
     mes_finish_time = boundary[-1][:-4]
 
