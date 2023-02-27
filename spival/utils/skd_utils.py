@@ -703,6 +703,15 @@ def is_valid_spk_kernel(spk_path):
                                                                  spk_path)
             return all_required_section_found
 
+        elif get_section_from_sections_map("@IN@MKSPK", sections_map)[0] is not None:
+            # Is a MKSPK Kernel file
+
+            # Check required sections
+            all_required_section_found = check_required_sections(sections_map,
+                                                                 REQUIRED_SECTIONS["SPK_MKSPK"],
+                                                                 spk_path)
+            return all_required_section_found
+
         else:
             log_error("DATA_AND_COMMENTS",
                       "SPK type not supported: " + spk_path, spk_path)
