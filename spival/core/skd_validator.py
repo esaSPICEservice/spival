@@ -3,7 +3,7 @@ import glob
 import os
 
 from spival.utils.skd_constants import *
-from spival.utils.files import exceeds_line_lengths, has_badchars, is_empty_file, files_are_equal
+from spival.utils.files import exceeds_line_lengths, has_badchars, is_empty_file, files_are_equal, is_valid_pds_filename
 from spival.utils.skd_utils import KERNEL_EXTENSIONS, is_valid_kernel, has_valid_contact_section, get_skd_version, \
     is_versioned_mk, get_versions_history_from_release_notes_file, check_release_notes_version
 from spival.utils.skd_val_logger import log_error, log_info, write_file_report
@@ -80,6 +80,9 @@ def validate_files(files):
 
             extension = str(os.path.splitext(filename)[1]).lower()
             if extension in CHECK_EXTENSIONS:
+
+                if not is_valid_pds_filename(filename):
+                    is_valid_file = False
 
                 # CHECK IF IS A DOC FILE
                 if extension in DOC_EXTENSIONS:

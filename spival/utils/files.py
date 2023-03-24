@@ -349,6 +349,67 @@ def is_empty_file(file):
     return os.stat(file).st_size == 0
 
 
+def is_valid_pds_filename(file_path):
+
+    """
+    Renaming Files
+            The names of the files to be included in the archive must
+            comply with the expanded ISO 9660 Level 2 requirement adopted
+            by PDS. Thy must have 36.3 form -- 1-36 character long name +
+            1-3 character long extension -- and must consist of letters
+            (a-z), digits (0-9) and underscores (_). All names that don't
+            comply with this requirement must be changed. NAIF recommends
+            that the files are named using lowercase letters (as is done
+            for the majority of the PDS-D data sets) rather than using
+            upper case letters that were the requirement during the CD era.
+    """
+
+    max_filename_length = 36
+    max_extension_length = 3
+    valid_chars = "abcdefghijklmnopqrstuvwxyz_0123456789"
+
+    is_valid_filename = True
+
+    basename = os.path.basename(file_path)
+    filename, extension = os.path.splitext(basename)
+
+    if len(filename) > max_filename_length:
+        log_error("INVALID_PDS_FILENAME",
+                  "Filename: " + filename + " with length: " + str(len(filename))
+                  + " exceeds maximum recommended length: " + str(max_filename_length), file_path)
+        is_valid_filename = False
+
+    extension = extension.replace(".", "")
+    if len(extension) > max_extension_length:
+        log_error("INVALID_PDS_FILENAME",
+                  "File extension: " + extension + " with length: " + str(len(extension))
+                  + " exceeds maximum recommended length: " + str(max_extension_length), file_path)
+        is_valid_filename = False
+
+    num_dot_found = 0
+    has_invalid_chars = False
+    for char in basename:
+        if char != ".":
+            if char not in valid_chars:
+                has_invalid_chars = True
+        else:
+            num_dot_found += 1
+
+    if num_dot_found == 0:
+        log_error("INVALID_PDS_FILENAME", "At least one '.' is required at filename: " + basename, file_path)
+        is_valid_filename = False
+    elif  num_dot_found > 1:
+        log_error("INVALID_PDS_FILENAME", "More than one '.' found at filename: " + basename, file_path)
+        is_valid_filename = False
+
+    if has_invalid_chars:
+        log_error("INVALID_PDS_FILENAME", "Invalid chars found at filename. That must consist of letters (a-z), "
+                                          "digits (0-9) and underscores (_) at : " + filename, file_path)
+        is_valid_filename = False
+
+    return is_valid_filename
+
+
 def has_badchars(file_path):
     file = open(file_path, 'r')
     linen = 0
@@ -974,6 +1035,9 @@ def get_frames_definitions_from_text(text):
                 continue
 
             if not tokens[1] == "=":
+                raise Exception("Wrong line format: " + line)
+
+            if len(tokens) < 3:
                 raise Exception("Wrong line format: " + line)
 
             frame_id = None
