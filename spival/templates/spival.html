@@ -1,204 +1,191 @@
 <!DOCTYPE html>
 <html>
-    <head>
-        <meta charset="utf-8">
-        <meta http-equiv="X-UA-Compatible" content="IE=edge">
-        <meta name="description" content="">
-        <meta name="viewport" content="width=device-width, initial-scale=1.0, minimum-scale=1.0, maximum-scale=2.0, user-scalable=yes">
+<head>
+    <meta charset="utf-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <title>ESA SPICE Service Validation Pipeline - SPICE</title>
 
-        <title>ESA SPICE Service Validation Pipeline - SPICE</title>
+    <meta name="description" content="">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, minimum-scale=1.0, maximum-scale=2.0, user-scalable=yes">
 
-        <script type="text/javascript" src="assets/js/jquery.min.js"></script>
-        <script type="text/javascript" src="assets/js/jquery.scrollTo.min.js"></script>
-        <script type="text/javascript" src="assets/js/scroll-tree.js"></script>
-        <script type="text/javascript" src="assets/js/theme.main.js"></script>
+<script type="text/javascript" src="assets/js/jquery.min.js"></script>
+<script type="text/javascript" src="assets/js/jquery.scrollTo.min.js"></script>
 
-        <link rel="stylesheet" href="assets/css/content-style.css">
-        <link rel="stylesheet" href="assets/css/theme.main.css">
-        <link rel="stylesheet" href="assets/css/theme.colors.css">
-    </head>
 
-    <body pageid="49811796">
+<script type="text/javascript" src="assets/js/scroll-tree.js"></script>
 
-        <div id="ht-loader">
-            <noscript>
-                <p style="width: 100%; text-align:center; position: absolute; margin-top: 200px;">This content cannot be displayed without JavaScript.<br>Please enable JavaScript and reload the page.</p>
-            </noscript>
+<script type="text/javascript" src="assets/js/theme.main.js"></script>
+
+
+<link rel="stylesheet" href="assets/css/content-style.css">
+
+<link rel="stylesheet" href="assets/css/theme.main.css">
+<link rel="stylesheet" href="assets/css/theme.colors.css">
+
+</head>
+
+<body pageid="49811796">
+
+<div id="ht-loader">
+    <noscript>
+        <p style="width: 100%; text-align:center; position: absolute; margin-top: 200px;">This content cannot be displayed without JavaScript.<br>Please enable JavaScript and reload the page.</p>
+    </noscript>
+</div>
+
+    <div id="header-bg-top"></div>
+<div id="header-bg-bottom"></div>
+   	<header id="ht-headerbar">
+    <div id="header-top-bar">
+    <div id="header-top-bar-left">
+        <div class="dropdown">Left Menu</div>
+        <ul>
+	<li><a href="https://esa.int">European Space agency</a></li>
+	<li><a href="https://esa.int/About_Us">About us</a></li>
+	<li><a href="https://esa.int/Our_Activities">our activities</a></li>
+	<li><a href="https://www.esa.int/About_Us/Careers_at_ESA">connect with us</a></li>
+</ul>
+    </div>
+    <div id="header-top-bar-right">
+        <div class="dropdown">Right Menu</div>
+        <ul>
+	<li><a href="https://esa.int/For_Media">For Media</a></li>
+	<li><a href="https://www.esa.int/Education">For Educators</a></li>
+	<li><a href="https://www.esa.int/kids/en/home">For Kids</a></li>
+</ul>
+    </div>
+</div>    <div id="header-main-content" >
+        <div id="header-main-content-logo">
+            <img src="assets/images/44_digital_logo_white_LOW.png" alt="ESA Logo">
         </div>
+        <div id="header-main-tab-bar">
+            <div class="dropdown">&#9776;</div>
+            <ul id="navigationUl">
+            <li class="header-main-tab-bar-item"><a class=" active" href="http://spice.esac.esa.int" >ESA SPICE Service Home</a></li>
+            
+            <!-- If there are up to 4 pages, show them all -->
+                                        <!-- If more show 4 first and others in dropdown -->    
+                           
+            
+            </ul>
+        </div>
+    </div>
+</header>       	    
+<div id="ht-wrap-container">
 
-        <div id="header-bg-top"></div>
-        <div id="header-bg-bottom"></div>
-
-        <header id="ht-headerbar">
-            <div id="header-top-bar">
-                <div id="header-top-bar-left">
-                    <div class="dropdown">Left Menu</div>
-                    <ul>
-                        <li><a href="https://esa.int">European Space agency</a></li>
-                        <li><a href="https://esa.int/About_Us">About us</a></li>
-                        <li><a href="https://esa.int/Our_Activities">our activities</a></li>
-                        <li><a href="https://www.esa.int/About_Us/Careers_at_ESA">connect with us</a></li>
-                    </ul>
-                </div>
-                <div id="header-top-bar-right">
-                    <div class="dropdown">Right Menu</div>
-                    <ul>
-                        <li><a href="https://esa.int/For_Media">For Media</a></li>
-                        <li><a href="https://www.esa.int/Education">For Educators</a></li>
-                        <li><a href="https://www.esa.int/kids/en/home">For Kids</a></li>
-                    </ul>
-                </div>
-            </div>
-            <div id="header-main-content">
-                <div id="header-main-content-logo">
-                    <img src="assets/images/44_digital_logo_white_LOW.png" alt="ESA Logo">
-                </div>
-                <div id="header-main-tab-bar">
-                    <div class="dropdown">&#9776;</div>
-                    <ul id="navigationUl">
-                        <li class="header-main-tab-bar-item">
-                            <a class=" active" href="http://spice.esac.esa.int">ESA SPICE Service Home</a>
-                        </li>
-
-                        <!-- If there are up to 4 pages, show them all -->
-                        <!-- If more show 4 first and others in dropdown -->
-                    </ul>
-                </div>
-            </div>
-        </header>
-
-        <div id="ht-wrap-container">
+            
             <article id="ht-content" class="ht-content">
-                <div id="main-content" class="wiki-content sp-grid-section" data-index-for-search="true">
-
-                    <!-- If page has no children and no content, add special sentence to hide this page in server version -->
-                    <div class="section section-1" id="src-49811796_SPIVALTemplatePage-SPICEkernelDatasetStatusReport">
-                        <h1 class="heading ">
-                            SPICE kernel Dataset Status Report
-                        </h1>
-                        <p>
-                            Click on the mission logo to open the HTML report for the last version of the SPICE Kernel Dataset:
-                        </p>
-                        <div  class="tablewrap">
-                            <table class="confluenceTable" style="border: none">
-                                <tbody>
-                                    <tr>
-                                        <td  class="confluenceTd" rowspan="1" colspan="1">
-                                            <p>
-                                                <a class="external-link" href="http://spice.esac.esa.int/status/ExoMars2016.html">
-                                                    <img class="confluence-embedded-image confluence-thumbnail" src="images/socciwiki/download/thumbnails/49811796/EM16.png" alt="images/socciwiki/download/thumbnails/49811796/EM16.png" width="280"/>
-                                                </a>
-                                            </p>
-                                        </td>
-                                        <td class="confluenceTd" rowspan="1" colspan="1">
-                                            <p>
-                                                <a class="external-link" href="http://spice.esac.esa.int/status/BEPICOLOMBO.html">
-                                                    <img class="confluence-embedded-image confluence-thumbnail" src="images/socciwiki/download/thumbnails/49811796/BC.png" alt="images/socciwiki/download/thumbnails/49811796/BC.png" width="280"/>
-                                                </a>
-                                            </p>
-                                        </td>
-                                        <td class="confluenceTd" rowspan="1" colspan="1">
-                                            <p>
-                                                <a  class="external-link" href="http://spice.esac.esa.int/status/MARS-EXPRESS.html">
-                                                    <img class="confluence-embedded-image confluence-thumbnail" src="images/socciwiki/download/thumbnails/49811796/MEX.png" alt="images/socciwiki/download/thumbnails/49811796/MEX.png" width="280"/>
-                                                </a>
-                                            </p>
-                                        </td>
-                                        <td class="confluenceTd" rowspan="1" colspan="1">
-                                            <p>
-                                                <a class="external-link" href="http://spice.esac.esa.int/status/JUICE.html">
-                                                    <img class="confluence-embedded-image confluence-thumbnail" src="images/socciwiki/download/thumbnails/49811796/JUICE.png" alt="images/socciwiki/download/thumbnails/49811796/JUICE.png" width="250"/>
-                                                </a>
-                                            </p>
-                                        </td>
-                                    </tr>
-                                    <tr>
-                                        <td class="confluenceTd" rowspan="1" colspan="1">
-                                        </td>
-                                        <td class="confluenceTd" rowspan="1" colspan="1">
-                                        </td>
-                                        <td class="confluenceTd" rowspan="1" colspan="1">
-                                        </td>
-                                        <td class="confluenceTd" rowspan="1" colspan="1" style="text-align: center">
-                                            <p>
-                                                <a class="external-link" href="http://spice.esac.esa.int/status/JUICE_5_1_150lb_23_1.html">
-                                                    CReMA 5.1.150lb.23.1
-                                                </a>
-                                                <br>
-                                                <a class="external-link" href="http://spice.esac.esa.int/status/JUICE_5_1_150la.html">
-                                                    CReMA 5.1.150la
-                                                </a>
-                                                <br>
-                                                <a class="external-link" href="http://spice.esac.esa.int/status/JUICE_5_0b23_1.html">
-                                                    CReMA 5.0b23.1
-                                                </a>
-                                                <br>
-                                                <a class="external-link" href="http://spice.esac.esa.int/status/JUICE_5_0.html">
-                                                    CReMA 5.0
-                                                </a>
-                                            </p>
-                                        </td>
-                                    </tr>
-                                </tbody>
-                            </table>
-                        </div>
-                        <p style="color: #000000;">
-                            Reports of former versions of the SPICE Kernel Datasets are available <a class="external-link" href="index_former.html">here</a>.
-                        </p>
-                    </div>
-
-                    <div class="section section-1" id="src-49811796_safe-id-U1BJVkFMVGVtcGxhdGVQYWdlLUF1eGlsaWFyeURhdGFDb252ZXJzaW9uU3lzdGVtKEFEQ1NuZylSZWdyZXNzaW9udGVzdHM">
-                        <h1 class="heading">
-                            <span>Auxiliary Data Conversion System (ADCSng) Regression tests</span>
-                        </h1>
-                        <p style="color: #000000;">
-                            Click <a class="external-link" href="adcsng_regression_test.html">here</a> to see the test for the latest version.
-                        </p>
-                        <p style="color: #000000;">
-                            Click <a class="external-link" href="index_adcsng_former.html">here</a> to see the test for the former versions of ADCSng.
-                        </p>
-                        <p style="color: #000000;">
-                            Click <a class="external-link" href="adcsng_dev_regression_test.html">here</a>to see the test for the latest development version.
-                        </p>
-                    </div>
-                </div>
-            </article>
-        </div>
-
-        <footer id="ht-footer">
-            <div id="footer-top">
-                <a id="footer-connect-with-us" href="https://www.esa.int/ESA/Connect_with_us" >
-                    <img src="assets/images/esa_connect.png" alt="connect with us">
-                </a>
-                <a id="footer-connect-with-us-short" href="https://www.esa.int/ESA/Connect_with_us" >
-                    <img src="assets/images/esa_connect_short.png" alt="connect with us">
-                </a>
-                <a href="https://twitter.com/SpiceEsa">
-                    <div id="footer-top-twitter">
-                         <div id="footer-top-twitter-handle">
-                             @SpiceEsa
-                         </div>
-                        <img src="assets/images/esa_connect_twitter.png" alt="ESA SPICE Service on Twitter">
-                    </div>
-                </a>
+        <div id="main-content" class="wiki-content sp-grid-section" data-index-for-search="true">
+        
+        <!-- If page has no children and no content, add special sentence to hide this page in server version -->
+            <div class="section section-1" id="src-49811796_SPIVALTemplatePage-SPICEkernelDatasetStatusReport">
+        <h1 class="heading "><span>SPICE kernel Dataset Status Report</span></h1>
+    <p  >Click on the mission logo to open the HTML report for the last version of the SPICE Kernel Dataset:    </p>
+    <div  class="tablewrap">
+        <table class="confluenceTable" style="border: none">
+                    <colgroup>
+                                    <col />
+                                    <col />
+                                    <col />
+                                    <col />
+                            </colgroup>
+        <thead class=" "></thead><tfoot class=" "></tfoot><tbody class=" ">    <tr>
+            <td  class="confluenceTd" rowspan="1" colspan="1">
+        <p  >            <a  class="external-link" href="http://spice.esac.esa.int/status/ExoMars2016.html">
+                    <img  class="confluence-embedded-image confluence-thumbnail" src="images/socciwiki/download/thumbnails/49811796/EM16.png" alt="images/socciwiki/download/thumbnails/49811796/EM16.png" width="280"  />
+            </a>
+        </p>
+            </td>
+                <td  class="confluenceTd" rowspan="1" colspan="1">
+        <p  >            <a  class="external-link" href="http://spice.esac.esa.int/status/BEPICOLOMBO.html">
+                    <img  class="confluence-embedded-image confluence-thumbnail" src="images/socciwiki/download/thumbnails/49811796/BC.png" alt="images/socciwiki/download/thumbnails/49811796/BC.png" width="280"  />
+            </a>
+        </p>
+            </td>
+                <td  class="confluenceTd" rowspan="1" colspan="1">
+        <p  >            <a  class="external-link" href="http://spice.esac.esa.int/status/MARS-EXPRESS.html">
+                    <img  class="confluence-embedded-image confluence-thumbnail" src="images/socciwiki/download/thumbnails/49811796/MEX.png" alt="images/socciwiki/download/thumbnails/49811796/MEX.png" width="280"  />
+            </a>
+        </p>
+           </td>
+                <td  class="confluenceTd" rowspan="1" colspan="1">
+        <p  >            <a  class="external-link" href="http://spice.esac.esa.int/status/JUICE.html">
+                    <img  class="confluence-embedded-image confluence-thumbnail" src="images/socciwiki/download/thumbnails/49811796/JUICE.png" alt="images/socciwiki/download/thumbnails/49811796/JUICE.png" width="250"  />
+            </a>
+        </p>
+            </td>
+        </tr> <tr>
+            <td  class="confluenceTd" rowspan="1" colspan="1">
+        <p  > </p>
+            </td>
+                <td  class="confluenceTd" rowspan="1" colspan="1">
+        <p  > </p>
+            </td>
+                <td  class="confluenceTd" rowspan="1" colspan="1">
+        <p  > </p>
+           </td>
+                <td  class="confluenceTd" rowspan="1" colspan="1" style="text-align: center">
+        <p  >            <a  class="external-link" href="http://spice.esac.esa.int/status/JUICE_5_1_150lb_23_1.html">
+            CReMA 5.1.150lb.23.1
+            </a> <br> <a  class="external-link" href="http://spice.esac.esa.int/status/JUICE_5_1_150la.html">
+            CReMA 5.1.150la
+            </a> <br> <a  class="external-link" href="http://spice.esac.esa.int/status/JUICE_5_0b23_1.html">
+            CReMA 5.0b23.1
+            </a> <br> <a  class="external-link" href="http://spice.esac.esa.int/status/JUICE_5_0.html">
+            CReMA 5.0
+            </a>
+        </p>
+            </td>
+        </tr>
+</tbody>        </table>
             </div>
-            <div id="footer-silver-bar">
-                <ul>
-                    <li><a href="https://esa.int/Services/Frequently_asked_questions">FAQ</a></li>
-                    <li><a href="https://esa.int/Services/Site_Map">Site Map</a></li>
-                    <li><a href="https://esa.int/Services/Contacts">Contacts</a></li>
-                    <li><a href="https://esa.int/Services/Terms_and_conditions">Terms and Conditions</a></li>
-                </ul>
-            </div>
-        </footer>
-
-        <div>
-            <div id="ht-mq-detect"></div>
+    <p  >    <span style="color: #000000;">
+Reports of former versions of the SPICE Kernel Datasets are available     </span>
+            <a  class="external-link" href="index_former.html">
+    here            </a>
+        <span style="color: #000000;">
+.    </span>
+    </p>
+    </div>
+    <p class="section section-1" id="src-49811796_safe-id-U1BJVkFMVGVtcGxhdGVQYWdlLUF1eGlsaWFyeURhdGFDb252ZXJzaW9uU3lzdGVtKEFEQ1NuZylSZWdyZXNzaW9udGVzdHM">
+        <h1 class="heading "><span>Auxiliary Data Conversion System (ADCSng) Regression tests</span></h1>
+        <p><span style="color: #000000;"> Click </span>
+        <a  class="external-link" href="adcsng_regression_test.html">here</a><span style="color: #000000;"> to see the test for the latest version.    </span></p>
+    <p><span style="color: #000000;"> Click </span>
+        <a  class="external-link" href="index_adcsng_former.html">here</a><span style="color: #000000;"> to see the test for the former versions of ADCSng.    </span></p>
+    <p><span style="color: #000000;"> Click </span>
+        <a  class="external-link" href="adcsng_dev_regression_test.html">here</a><span style="color: #000000;"> to see the test for the latest development version.    </span></p>
+    </div>
         </div>
+    </article>
 
-        <script src="assets/js/sitesToBeDeleted.js"></script>
-        <script src="assets/js/eventlisteners.js"></script>
-        <script src="assets/js/fileexplorer.js"></script>
+            </div>
+<footer id="ht-footer">
+    <div id="footer-top">
+        <a id="footer-connect-with-us" href="https://www.esa.int/ESA/Connect_with_us" ><img src="assets/images/esa_connect.png" alt="connect with us"></a>
+        <a id="footer-connect-with-us-short" href="https://www.esa.int/ESA/Connect_with_us" ><img src="assets/images/esa_connect_short.png" alt="connect with us"></a>
+        <a href="https://twitter.com/SpiceEsa">
+            <div id="footer-top-twitter">
+                 <div id="footer-top-twitter-handle">@SpiceEsa</div>
+                <img src="assets/images/esa_connect_twitter.png" alt="ESA SPICE Service on Twitter">
+            </div>
+        </a>
+    </div>
+    <div id="footer-silver-bar">
+        <ul>
+	<li><a href="https://esa.int/Services/Frequently_asked_questions">FAQ</a></li>
+	<li><a href="https://esa.int/Services/Site_Map">Site Map</a></li>
+	<li><a href="https://esa.int/Services/Contacts">Contacts</a></li>
+	<li><a href="https://esa.int/Services/Terms_and_conditions">Terms and Conditions</a></li>
+</ul>
+    </div>
+</footer>
+<div>
+    <div id="ht-mq-detect"></div>
+</div>
 
-    </body>
+<script src="assets/js/sitesToBeDeleted.js"></script>
+<script src="assets/js/eventlisteners.js"></script>
+<script src="assets/js/fileexplorer.js"></script>
+
+</body>
 </html>
