@@ -1,0 +1,17 @@
+{
+  "version": "1.0",
+  "name": "spival Configuration File",
+  "mission": "JUICE",
+  "ipynb": "notebooks/JUICE_CREMA.ipynb",
+  "github_skd_path": "JUICE/kernels",
+  "skd_path": "/home/rvalles/spice/kernels/juice/kernels",
+  "notebooks_path":"/home/rvalles/spice/spival/spival/tests/notebooks",
+  "index_path":"/home/rvalles/spice/spival/spival/tests/html",
+  "mk":"juice_crema_5_1_150lb_23_1_local.tm",
+  "crema_ck": "juice_sc_crema_5_1_150lb_23_1_default_*.bc",
+  "predicted_ck": "juice_sc_crema_5_1_150lb_23_1_default_*.bc",
+  "reconstructed_spk": "juice_crema_5_1_150lb_23_1_*.bsp",
+  "check_full_coverage": true,
+  "coverage_margin": 300,
+  "samples": 100000
+}

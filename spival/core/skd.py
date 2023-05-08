@@ -269,7 +269,10 @@ def write_JUICE(config):
     else:
         replacements['resolution'] = "60"
 
-    template = config['root_dir'] + '/notebooks/JUICE.ipynb'
+    if "ipynb" in config:
+        template = os.path.join(config['root_dir'], config['ipynb'])
+    else:
+        template = os.path.join(config['root_dir'], '/notebooks/JUICE.ipynb')
 
     #
     # Notebook for Jenkins and HTML publication

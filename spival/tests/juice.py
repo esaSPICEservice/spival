@@ -3,7 +3,7 @@ from spival.command_line import main as spival
 
 def runSPIVAL(debug=False, log=False):
 
-    spival(config='juice.json', debug=debug)
+    spival(config='juice_crema.json', debug=debug)
 
 
 if __name__ == '__main__':
