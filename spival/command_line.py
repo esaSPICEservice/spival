@@ -149,7 +149,6 @@ def main(config=False, debug=False, log=False, mission=False):
                 root_dir = os.path.dirname(__file__)
                 config['root_dir'] = root_dir
                 mission = config['mission']
-                print("Info: Config file: '" + str(config_file) + "', root_dir: '" + str(root_dir) + "', mission: " + str(mission))
             except:
                 error_message = str(traceback.format_exc())
                 print("Error: The SPIVAL JSON configuration file has syntactical errors.")
