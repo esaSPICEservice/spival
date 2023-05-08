@@ -220,20 +220,8 @@ def write_JUICE(config):
     # We obtain the predicted and the measured CKs
     #
     replacements['predicted_ck'] = get_latest_kernel('ck', config['skd_path'], config['predicted_ck'])
-
-    ck_path = None
-    frame = None
-
-    if 'crema_ck' in config:
-        replacements['crema_ck'] = get_latest_kernel('ck', config['skd_path'], config['crema_ck'])
-        ck_path = os.path.join(config['skd_path'], 'ck', replacements['crema_ck'])
-        frame = 'JUICE_SPACECRAFT_PLAN'
-
-    if 'measured_ck' in config:
-        replacements['measured_ck'] = get_latest_kernel('ck', config['skd_path'], config['measured_ck'])
-        ck_path = os.path.join(config['skd_path'], 'ck', replacements['measured_ck'])
-        frame = 'JUICE_SPACECRAFT_MEAS'
-
+    replacements['crema_ck'] = get_latest_kernel('ck', config['skd_path'], config['crema_ck'])
+    # replacements['measured_ck'] = get_latest_kernel('ck', config['skd_path'],'bc_mpo_sc_scm_*_s????????_v??.bc')
     replacements['reconstructed_spk'] = get_latest_kernel('spk', config['skd_path'], config['reconstructed_spk'])
 
     #
@@ -242,12 +230,8 @@ def write_JUICE(config):
     now = datetime.datetime.now()
     replacements['current_time'] = now.strftime("%Y-%m-%dT%H:%M:%S")
 
-    boundary = spiops.cov_ck_ker(ck_path, frame, time_format='UTC')
-    if boundary is None:
-        raise Exception('No CK pattern specified, crema_ck or measured_ck shall be specified in config.')
-
-    if isinstance(boundary, bool) and not boundary:
-        raise Exception('Could not obtain coverage from ' + ck_path + ' for frame: ' + frame)
+    boundary = spiops.cov_ck_ker(config['skd_path'] + '/ck/' +
+                                 replacements['crema_ck'], 'JUICE_SPACECRAFT_PLAN', time_format='UTC')
 
     mes_finish_time = boundary[-1][:-4]
 
