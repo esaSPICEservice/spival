@@ -388,7 +388,7 @@ def is_valid_pds_filename(file_path):
 
     num_dot_found = 0
     has_invalid_chars = False
-    for char in basename:
+    for char in str(basename).lower():
         if char != ".":
             if char not in valid_chars:
                 has_invalid_chars = True
@@ -398,7 +398,7 @@ def is_valid_pds_filename(file_path):
     if num_dot_found == 0:
         log_error("INVALID_PDS_FILENAME", "At least one '.' is required at filename: " + basename, file_path)
         is_valid_filename = False
-    elif  num_dot_found > 1:
+    elif num_dot_found > 1:
         log_error("INVALID_PDS_FILENAME", "More than one '.' found at filename: " + basename, file_path)
         is_valid_filename = False
 

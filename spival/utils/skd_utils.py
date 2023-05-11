@@ -210,7 +210,7 @@ def is_valid_binary_kernel(filename, check_line_length=True, check_indentation=T
     extension = str(os.path.splitext(filename)[1]).lower()
 
     # Write comments to a fie
-    comment_filename = filename.replace(extension, ".commnt")
+    comment_filename = filename + ".commnt"
     with open(comment_filename, 'w') as commnt_file:
         commnt_file.write(str(commnt_read(filename)))
 
