@@ -16,6 +16,7 @@ from spival.core.skd import write_MarsExpress
 from spival.utils import frames
 from spival.utils import coverage
 from spival.utils import utils
+from spival.utils import email
 
 
 def main(config=False, debug=False, log=False, mission=False):
@@ -90,6 +91,9 @@ def main(config=False, debug=False, log=False, mission=False):
     parser.add_argument('-pp', '--postprocessing',
                         help='Runs post-processing actions over exported Jupyter Notebooks to HTML',
                         default='stdout')
+    parser.add_argument('-em', '--email',
+                        help='Send email with Tests Results',
+                        default='stdout')
     args = parser.parse_args()
 
     if args.version:
@@ -99,7 +103,9 @@ def main(config=False, debug=False, log=False, mission=False):
     if args.postprocessing != 'stdout':
         html_files = glob.glob(args.postprocessing)
         for html_file in html_files:
-            utils.post_process_html(html_file)
+            results = utils.post_process_html(html_file)
+            if args.email:
+                email.send_status_email(config, results, 'FAIL' in results)
         return
 
     if args.metakernel: mk = args.metakernel

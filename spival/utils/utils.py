@@ -128,4 +128,5 @@ def post_process_html(html_file):
     soup2.find("a").clear()
     with open(html_file.replace(".html", "_results.html"), "w") as outf:
         outf.write(str(soup2))
+    return soup2
 

@@ -9,5 +9,17 @@
   "mk":"juice_ops_local.tm",
   "measured_ck": "juice_sc_meas_*.bc",
   "predicted_ck": "juice_sc_attc_*.bc",
-  "reconstructed_spk": "juice_orbc_*.bsp"
+  "reconstructed_spk": "juice_orbc_*.bsp",
+  "email":[
+      {
+         "send_email":"False",
+         "clients":"spice@sciops.esa.int",
+         "developer":"spice@sciops.esa.int",
+         "mission":"JUICE",
+         "skd_name":"",
+         "ftp_address":"Not available.",
+         "git_repository":"Not available.",
+         "contact":"   ESA SPICE Service\n   spice@sciops.esa.int"
+      }
+   ]
 }
