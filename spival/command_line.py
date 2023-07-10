@@ -93,7 +93,7 @@ def main(config=False, debug=False, log=False, mission=False):
                         default='stdout')
     parser.add_argument('-em', '--email',
                         help='Send email with Tests Results',
-                        default='stdout')
+                        action='store_true')
     args = parser.parse_args()
 
     if args.version:
