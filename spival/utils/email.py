@@ -18,7 +18,6 @@ def send_status_email(config, body_text='', error=False):
 
         SMTPserver = 'smtp.sciops.esa.int'
         sender = 'esa_spice@sciops.esa.int'
-        operational_host = config['operational_host']
 
         destination = config['email'][0]['developer']
         if error:
