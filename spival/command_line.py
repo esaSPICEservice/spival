@@ -141,7 +141,7 @@ def main(config=False, debug=False, log=False, mission=False):
         for html_file in html_files:
             results = utils.post_process_html(html_file)
             if args.email:
-                email.send_status_email(config, results, 'FAIL' in results)
+                email.send_status_email(config, results)
         return
 
     #

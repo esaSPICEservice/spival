@@ -20,20 +20,22 @@ def send_status_email(config, body_text='', error=False):
         sender = 'esa_spice@sciops.esa.int'
 
         destination = config['email'][0]['developer']
-        if error:
-            subject = "[SPIVAL]: {} Tests FAIL".format(config['email'][0]['mission'])
-        else:
-            subject = "[SPIVAL]: {} Tests OK".format(config['email'][0]['mission'])
 
         USERNAME = "esa_spice"
         PASSWORD = "WRUBTNBLOJMHLUOR"
 
         # typical values for text_subtype are plain, html, xml
-        text_subtype = 'plain'
+        text_subtype = 'html'
 
         try:
             # Prepare email message
             msg = MIMEText(body_text, text_subtype)
+            if 'FAIL' in msg.as_string():
+                error = True
+            if error:
+                subject = "[SPIVAL]: {} Tests FAIL".format(config['email'][0]['mission'])
+            else:
+                subject = "[SPIVAL]: {} Tests OK".format(config['email'][0]['mission'])
             msg['Subject'] = subject
             msg['From'] = sender  # some SMTP servers will do this automatically, not all
 
