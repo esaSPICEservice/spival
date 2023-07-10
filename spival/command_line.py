@@ -100,14 +100,6 @@ def main(config=False, debug=False, log=False, mission=False):
         print(version)
         return
 
-    if args.postprocessing != 'stdout':
-        html_files = glob.glob(args.postprocessing)
-        for html_file in html_files:
-            results = utils.post_process_html(html_file)
-            if args.email:
-                email.send_status_email(config, results, 'FAIL' in results)
-        return
-
     if args.metakernel: mk = args.metakernel
     if args.time: time = args.time
     if args.gaps: gaps = args.gaps
@@ -143,6 +135,14 @@ def main(config=False, debug=False, log=False, mission=False):
 
     if args.config != 'stdout':
         config = args.config
+
+    if args.postprocessing != 'stdout':
+        html_files = glob.glob(args.postprocessing)
+        for html_file in html_files:
+            results = utils.post_process_html(html_file)
+            if args.email:
+                email.send_status_email(config, results, 'FAIL' in results)
+        return
 
     #
     # We load the configuration
