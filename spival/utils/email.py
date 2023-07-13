@@ -59,7 +59,7 @@ def send_status_email(config, body_text='', error=False):
                 conn.set_debuglevel(False)
                 conn.login(USERNAME, PASSWORD)
                 try:
-                    conn.sendmail(sender, dest_email, msg.as_string())
+                    conn.sendmail(sender, dest_email, msg.as_string() + '\n\n' + config['email'][0]['report'])
                 except Exception as exc:
                     print("Send mail failed; {}".format(str(exc)))  # give a error message
                 finally:
