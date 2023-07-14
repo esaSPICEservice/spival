@@ -6,4 +6,6 @@
   "skd_path": "/home/rvalles/spice/kernels/exomars2016/kernels",
   "notebooks_path":"/home/rvalles/spice/spival/spival/tests/notebooks",
   "index_path":"/home/rvalles/spice/spival/spival/tests/html",
-  "mk":"em16_ops_local.tm"}
+  "mk":"em16_ops_local.tm",
+  "sclk_start_coeff_idx":  { "tgo": 1 }
+}

@@ -6,4 +6,6 @@
   "skd_path": "/Users/mcosta/SPICE/MARS-EXPRESS/kernels",
   "notebooks_path":"/Users/mcosta/Dropbox/SPICE/SPICE_CROSS_MISSION/spival/spival/tests/notebooks",
   "index_path":"/Users/mcosta/Dropbox/SPICE/SPICE_CROSS_MISSION/spival/spival/tests/html",
-  "mk":"MEX_OPS_LOCAL.TM"}
+  "mk":"MEX_OPS_LOCAL.TM",
+  "sclk_start_coeff_idx":  { "mex": 1 }
+}

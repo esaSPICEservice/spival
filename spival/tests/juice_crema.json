@@ -13,5 +13,6 @@
   "reconstructed_spk": "juice_crema_5_1_150lb_23_1_*.bsp",
   "check_full_coverage": true,
   "coverage_margin": 300,
-  "samples": 100000
+  "samples": 100000,
+  "sclk_start_coeff_idx":  { "juice": 1 }
 }

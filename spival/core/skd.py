@@ -16,7 +16,7 @@ from spival.utils.skd_val_logger import write_final_report
 from spival.utils.utils import fill_template
 
 
-def write_ExoMars2016(config):
+def write_ExoMars2016(config, config_file):
 
     repo = git.Repo(config['skd_path'][:-7])
     tags = repo.tags
@@ -25,6 +25,7 @@ def write_ExoMars2016(config):
     # Set the replacements for the Notebook template
     #
     replacements = {'metakernel': config['skd_path'] + '/mk/' + config['mk']}
+    replacements['config_file'] = config_file
 
     spiops.load(replacements['metakernel'])
 
@@ -109,7 +110,7 @@ def write_ExoMars2016(config):
     return
 
 
-def write_BepiColombo(config):
+def write_BepiColombo(config, config_file):
 
     repo = git.Repo(config['skd_path'][:-7])
     tags = repo.tags
@@ -118,6 +119,7 @@ def write_BepiColombo(config):
     # Set the replacements for the Notebook template
     #
     replacements = {'metakernel': config['skd_path'] + '/mk/' + config['mk']}
+    replacements['config_file'] = config_file
 
     spiops.load(replacements['metakernel'])
 
@@ -200,12 +202,13 @@ def write_BepiColombo(config):
     return
 
 
-def write_JUICE(config):
+def write_JUICE(config, config_file):
 
     #
     # Set the replacements for the Notebook template
     #
     replacements = {'metakernel': config['skd_path'] + '/mk/' + config['mk']}
+    replacements['config_file'] = config_file
 
     spiops.load(replacements['metakernel'])
 
@@ -316,7 +319,7 @@ def write_JUICE(config):
     return
 
 
-def write_MarsExpress(config):
+def write_MarsExpress(config, config_file):
 
     repo = git.Repo(config['skd_path'][:-7])
     tags = repo.tags
@@ -325,6 +328,7 @@ def write_MarsExpress(config):
     # Set the replacements for the Notebook template
     #
     replacements = {'metakernel': config['skd_path'] + '/mk/' + config['mk']}
+    replacements['config_file'] = config_file
 
     spiops.load(replacements['metakernel'])
 

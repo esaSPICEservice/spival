@@ -148,7 +148,11 @@ def main(config=False, debug=False, log=False, mission=False):
     # We load the configuration
     #
     try:
-        config_file = config
+        if os.path.isabs(config):
+            config_file = config
+        else:
+            config_file = os.path.join(os.getcwd(), config)
+
         with open(config) as f:
             try:
                 config = json.load(f)
@@ -162,13 +166,13 @@ def main(config=False, debug=False, log=False, mission=False):
                 raise
 
             if mission.lower() == 'exomars2016':
-                write_ExoMars2016(config)
+                write_ExoMars2016(config, config_file)
             if mission.lower() == 'bepicolombo':
-                write_BepiColombo(config)
+                write_BepiColombo(config, config_file)
             if mission.lower() == 'juice':
-                write_JUICE(config)
+                write_JUICE(config, config_file)
             if mission.lower() == 'mars_express':
-                write_MarsExpress(config)
+                write_MarsExpress(config, config_file)
 
     except:
         #
