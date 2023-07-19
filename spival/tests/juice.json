@@ -22,5 +22,11 @@
          "contact":"   ESA SPICE Service\n   spice@sciops.esa.int"
       }
    ],
-  "sclk_start_coeff_idx":  { "juice": 1 }
+  "sclk_start_coeff_idx":  { "juice": 1 },
+  "exclude_intervals": {
+    "all": [],
+    "ckVsAEM": [["2023-05-26T13:03:00", "2023-05-26T13:03:30"]],
+    "ckVsAocs": [],
+    "spkVsOem": [["2023-07-05T04:52:30", "2023-07-05T04:53:00"]]
+  }
 }
