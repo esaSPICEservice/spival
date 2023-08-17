@@ -13,6 +13,7 @@ from spival.core.skd import write_ExoMars2016
 from spival.core.skd import write_BepiColombo
 from spival.core.skd import write_JUICE
 from spival.core.skd import write_MarsExpress
+from spival.core.skd import write_SOLO
 from spival.utils import frames
 from spival.utils import coverage
 from spival.utils import utils
@@ -173,6 +174,8 @@ def main(config=False, debug=False, log=False, mission=False):
                 write_JUICE(config, config_file)
             if mission.lower() == 'mars_express':
                 write_MarsExpress(config, config_file)
+            if mission.lower() == 'solar-orbiter':
+                write_SOLO(config, config_file)
 
     except:
         #

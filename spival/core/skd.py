@@ -16,18 +16,9 @@ from spival.utils.skd_val_logger import write_final_report
 from spival.utils.utils import fill_template
 
 
-def write_ExoMars2016(config, config_file):
-
-    repo = git.Repo(config['skd_path'][:-7])
-    tags = repo.tags
-
-    #
-    # Set the replacements for the Notebook template
-    #
+def prepare_replacements(config, config_file):
     replacements = {'metakernel': config['skd_path'] + '/mk/' + config['mk']}
     replacements['config_file'] = config_file
-
-    spiops.load(replacements['metakernel'])
 
     with open(replacements['metakernel'], 'r') as f:
         for line in f:
@@ -37,223 +28,26 @@ def write_ExoMars2016(config, config_file):
             else:
                 replacements['skd_version'] = 'N/A'
 
-    #
-    # We obtain the predicted and the measured CKs
-    #
-    replacements['predicted_ck'] = get_latest_kernel('ck', config['skd_path'], 'em16_tgo_sc_fsp_*_s????????_v??.bc')
-    replacements['measured_ck'] = get_latest_kernel('ck', config['skd_path'], 'em16_tgo_sc_ssm_*_s????????_v??.bc')
-
-    #
-    # We obtain today's date
-    #
     now = datetime.datetime.now()
     replacements['current_time'] = now.strftime("%Y-%m-%dT%H:%M:%S")
 
+    return replacements
+
+
+def set_measured_dates(replacements, ck_path, frame, config):
     try:
-        boundary = spiops.cov_ck_ker(config['skd_path'] + '/ck/' +
-                                      replacements['measured_ck'], 'TGO_SPACECRAFT', time_format='UTC')
+        boundary = spiops.cov_ck_ker(ck_path, frame, time_format='UTC')
+        if boundary is None:
+            raise Exception('No CK pattern specified, crema_ck or measured_ck shall be specified in config.')
+
+        if isinstance(boundary, bool) and not boundary:
+            raise Exception('Could not obtain coverage from ' + ck_path + ' for frame: ' + frame)
+
         mes_finish_time = boundary[-1][:-4]
     except:
         print(f"WARNING: Finish time for {replacements['measured_ck']} could not be determined")
+        now = datetime.datetime.now()
         mes_finish_time = now.strftime("%Y-%m-%dT%H:%M:%S")
-
-    mes_start_date = datetime.datetime.strptime(mes_finish_time, '%Y-%m-%dT%H:%M:%S')
-    mes_start_date = mes_start_date - datetime.timedelta(days=7)
-    mes_start_time = mes_start_date.strftime("%Y-%m-%dT%H:%M:%S")
-
-    #
-    # We obtain the dates from the Tags
-    #
-    start_date = str(tags[-2]).split('_')[1]
-    start_time = '{}-{}-{}T00:00:00'.format(start_date[0:4], start_date[4:6], start_date[6:8])
-
-    finish_time = '{}-{}-{}T00:00:00'.format(start_date[0:4], start_date[4:6], start_date[6:8])
-
-    index = -2
-    while start_time == finish_time:
-        start_date = str(tags[index]).split('_')[1]
-        start_time = '{}-{}-{}T00:00:00'.format(start_date[0:4],
-                                                start_date[4:6],
-                                                start_date[6:8])
-        index -= 1
-
-    replacements['start_time'] = start_time
-    replacements['finish_time'] = finish_time
-
-    replacements['start_time_measured'] = mes_start_time
-    replacements['finish_time_measured'] = mes_finish_time
-
-    template = config['root_dir'] + '/notebooks/ExoMars2016.ipynb'
-
-    #
-    # Notebook for Jenkins and HTML publication
-    #
-    output = 'ExoMars2016_' + replacements['skd_version'] + '.ipynb'
-    replacements['skd_path'] = config['skd_path']
-    fill_template(template, output, replacements)
-    shutil.move(output, os.path.join(config['notebooks_path'], output))
-
-    #
-    # Notebook for the GitHub Laboratory
-    #
-    output = 'index.ipynb'
-    replacements['metakernel'] = config['github_skd_path'] + '/mk/' + config['mk']
-    replacements['skd_path'] = config['github_skd_path']
-    fill_template(template, output, replacements)
-    shutil.move(output, os.path.join(config['notebooks_path'], output))
-
-    #
-    # Update the HTMLs
-    #
-    update_html(config)
-
-    return
-
-
-def write_BepiColombo(config, config_file):
-
-    repo = git.Repo(config['skd_path'][:-7])
-    tags = repo.tags
-
-    #
-    # Set the replacements for the Notebook template
-    #
-    replacements = {'metakernel': config['skd_path'] + '/mk/' + config['mk']}
-    replacements['config_file'] = config_file
-
-    spiops.load(replacements['metakernel'])
-
-    with open(replacements['metakernel'], 'r') as f:
-        for line in f:
-            if 'SKD_VERSION' in line:
-                replacements['skd_version'] = line.split("'")[1]
-                break
-            else:
-                replacements['skd_version'] = 'N/A'
-
-    #
-    # We obtain the predicted and the measured CKs
-    #
-    replacements['predicted_ck'] = get_latest_kernel('ck', config['skd_path'], 'bc_mpo_sc_fcp_00*.bc')
-    replacements['commanded_ck'] = get_latest_kernel('ck', config['skd_path'], 'bc_mpo_sc_scc_*_s????????_v??.bc')
-    replacements['measured_ck'] = get_latest_kernel('ck', config['skd_path'], 'bc_mpo_sc_scm_*_s????????_v??.bc')
-    replacements['reconstructed_spk'] = get_latest_kernel('spk', config['skd_path'], 'bc_mpo_fcp_0*_v??.bsp')
-
-    #
-    # We obtain today's date
-    #
-    now = datetime.datetime.now()
-    replacements['current_time'] = now.strftime("%Y-%m-%dT%H:%M:%S")
-
-    boundary = spiops.cov_ck_ker(config['skd_path'] + '/ck/' +
-                                  replacements['measured_ck'], 'MPO_SPACECRAFT', time_format='UTC')
-
-    mes_finish_time = boundary[-1][:-4]
-    mes_start_date = datetime.datetime.strptime(mes_finish_time, '%Y-%m-%dT%H:%M:%S')
-    mes_start_date = mes_start_date - datetime.timedelta(days=7)
-    mes_start_time = mes_start_date.strftime("%Y-%m-%dT%H:%M:%S")
-
-    #
-    # We obtain the dates from the Tags
-    #
-    start_date = str(tags[-2]).split('_')[1]
-    start_time = '{}-{}-{}T00:00:00'.format(start_date[0:4], start_date[4:6], start_date[6:8])
-
-    finish_time = '{}-{}-{}T00:00:00'.format(start_date[0:4], start_date[4:6], start_date[6:8])
-
-    index = -2
-    while start_time == finish_time:
-        start_date = str(tags[index]).split('_')[1]
-        start_time = '{}-{}-{}T00:00:00'.format(start_date[0:4],
-                                                start_date[4:6],
-                                                start_date[6:8])
-        index -= 1
-
-    replacements['start_time'] = start_time
-    replacements['finish_time'] = finish_time
-
-    replacements['start_time_measured'] = mes_start_time
-    replacements['finish_time_measured'] = mes_finish_time
-
-    template = config['root_dir'] + '/notebooks/BEPICOLOMBO.ipynb'
-
-    #
-    # Notebook for Jenkins and HTML publication
-    #
-    output = 'BEPICOLOMBO_' + replacements['skd_version'] + '.ipynb'
-    replacements['skd_path'] = config['skd_path']
-    fill_template(template, output, replacements)
-    shutil.move(output, os.path.join(config['notebooks_path'], output))
-
-    #
-    # Notebook for the GitHub Laboratory
-    #
-    output = 'index.ipynb'
-    replacements['metakernel'] = config['github_skd_path'] + '/mk/' + config['mk']
-    replacements['skd_path'] = config['github_skd_path']
-    fill_template(template, output, replacements)
-    shutil.move(output, os.path.join(config['notebooks_path'], output))
-
-    #
-    # Update the HTMLs
-    #
-    update_html(config)
-
-    return
-
-
-def write_JUICE(config, config_file):
-
-    #
-    # Set the replacements for the Notebook template
-    #
-    replacements = {'metakernel': config['skd_path'] + '/mk/' + config['mk']}
-    replacements['config_file'] = config_file
-
-    spiops.load(replacements['metakernel'])
-
-    with open(replacements['metakernel'], 'r') as f:
-        for line in f:
-            if 'SKD_VERSION' in line:
-                replacements['skd_version'] = line.split("'")[1]
-                break
-            else:
-                replacements['skd_version'] = 'N/A'
-
-    #
-    # We obtain the predicted and the measured CKs
-    #
-    replacements['predicted_ck'] = get_latest_kernel('ck', config['skd_path'], config['predicted_ck'])
-
-    ck_path = None
-    frame = None
-
-    if 'crema_ck' in config:
-        replacements['crema_ck'] = get_latest_kernel('ck', config['skd_path'], config['crema_ck'])
-        ck_path = os.path.join(config['skd_path'], 'ck', replacements['crema_ck'])
-        frame = 'JUICE_SPACECRAFT_PLAN'
-
-    if 'measured_ck' in config:
-        replacements['measured_ck'] = get_latest_kernel('ck', config['skd_path'], config['measured_ck'])
-        ck_path = os.path.join(config['skd_path'], 'ck', replacements['measured_ck'])
-        frame = 'JUICE_SPACECRAFT_MEAS'
-
-    replacements['reconstructed_spk'] = get_latest_kernel('spk', config['skd_path'], config['reconstructed_spk'])
-
-    #
-    # We obtain today's date
-    #
-    now = datetime.datetime.now()
-    replacements['current_time'] = now.strftime("%Y-%m-%dT%H:%M:%S")
-
-    boundary = spiops.cov_ck_ker(ck_path, frame, time_format='UTC')
-    if boundary is None:
-        raise Exception('No CK pattern specified, crema_ck or measured_ck shall be specified in config.')
-
-    if isinstance(boundary, bool) and not boundary:
-        raise Exception('Could not obtain coverage from ' + ck_path + ' for frame: ' + frame)
-
-    mes_finish_time = boundary[-1][:-4]
 
     if "check_full_coverage" in config and config["check_full_coverage"] is True:
         # Check the full predicted_ck coverage
@@ -289,66 +83,15 @@ def write_JUICE(config, config_file):
     else:
         replacements['resolution'] = "60"
 
-    if "ipynb" in config:
-        template = os.path.join(config['root_dir'], config['ipynb'])
-    else:
-        template = os.path.join(config['root_dir'], 'notebooks/JUICE.ipynb')
-
-    #
-    # Notebook for Jenkins and HTML publication
-    #
-    output = 'JUICE_' + replacements['skd_version'] + '.ipynb'
-    replacements['skd_path'] = config['skd_path']
-    fill_template(template, output, replacements)
-    shutil.move(output, os.path.join(config['notebooks_path'], output))
-
-    #
-    # Notebook for the GitHub Laboratory
-    #
-    output = 'index.ipynb'
-    replacements['metakernel'] = config['github_skd_path'] + '/mk/' + config['mk']
-    replacements['skd_path'] = config['github_skd_path']
-    fill_template(template, output, replacements)
-    shutil.move(output, os.path.join(config['notebooks_path'], output))
-
-    #
-    # Update the HTMLs
-    #
-    update_html(config)
-
-    return
+    return replacements
 
 
-def write_MarsExpress(config, config_file):
+def get_dates_from_tags(config, replacements):
 
     repo = git.Repo(config['skd_path'][:-7])
     tags = repo.tags
 
-    #
-    # Set the replacements for the Notebook template
-    #
-    replacements = {'metakernel': config['skd_path'] + '/mk/' + config['mk']}
-    replacements['config_file'] = config_file
-
-    spiops.load(replacements['metakernel'])
-
-    with open(replacements['metakernel'], 'r') as f:
-        for line in f:
-            if 'SKD_VERSION' in line:
-                replacements['skd_version'] = line.split("'")[1]
-                break
-            else:
-                replacements['skd_version'] = 'N/A'
-
-        #
-        # We obtain today's date
-        #
-    now = datetime.datetime.now()
-    replacements['current_time'] = now.strftime("%Y-%m-%dT%H:%M:%S")
-
-    #
     # We obtain the dates from the Tags
-    #
     start_date = str(tags[-2]).split('_')[1]
     start_time = '{}-{}-{}T00:00:00'.format(start_date[0:4], start_date[4:6], start_date[6:8])
 
@@ -363,18 +106,22 @@ def write_MarsExpress(config, config_file):
                                                 start_date[6:8])
         index -= 1
 
-    print('Notebook start time {}'.format(start_time))
-    print('Notebook finish time {}'.format(finish_time))
-
     replacements['start_time'] = start_time
     replacements['finish_time'] = finish_time
 
-    template = config['root_dir'] + '/notebooks/MARS-EXPRESS.ipynb'
+    return replacements
+
+def create_notebooks(mission, replacements, config):
+
+    if "ipynb" in config:
+        template = os.path.join(config['root_dir'], config['ipynb'])
+    else:
+        template = os.path.join(config['root_dir'], 'notebooks/' + mission + '.ipynb')
 
     #
     # Notebook for Jenkins and HTML publication
     #
-    output = 'MARS-EXPRESS_' + replacements['skd_version'] + '.ipynb'
+    output = mission + '_' + replacements['skd_version'] + '.ipynb'
     replacements['skd_path'] = config['skd_path']
     fill_template(template, output, replacements)
     shutil.move(output, os.path.join(config['notebooks_path'], output))
@@ -388,9 +135,126 @@ def write_MarsExpress(config, config_file):
     fill_template(template, output, replacements)
     shutil.move(output, os.path.join(config['notebooks_path'], output))
 
-    #
+
+def write_ExoMars2016(config, config_file):
+
+    replacements = prepare_replacements(config, config_file)
+    spiops.load(replacements['metakernel'])
+
+    # We obtain the predicted and the measured CKs
+    replacements['predicted_ck'] = get_latest_kernel('ck', config['skd_path'], 'em16_tgo_sc_fsp_*_s????????_v??.bc')
+    replacements['measured_ck'] = get_latest_kernel('ck', config['skd_path'], 'em16_tgo_sc_ssm_*_s????????_v??.bc')
+
+    replacements = set_measured_dates(replacements, config['skd_path'] + '/ck/' + replacements['measured_ck'], 'TGO_SPACECRAFT', config)
+
+    replacements = get_dates_from_tags(config, replacements)
+
+    create_notebooks('ExoMars2016', replacements, config)
+
     # Update the HTMLs
+    update_html(config)
+
+    return
+
+
+def write_BepiColombo(config, config_file):
+
+    replacements = prepare_replacements(config, config_file)
+    spiops.load(replacements['metakernel'])
+
     #
+    # We obtain the predicted and the measured CKs
+    #
+    replacements['predicted_ck'] = get_latest_kernel('ck', config['skd_path'], 'bc_mpo_sc_fcp_00*.bc')
+    replacements['commanded_ck'] = get_latest_kernel('ck', config['skd_path'], 'bc_mpo_sc_scc_*_s????????_v??.bc')
+    replacements['measured_ck'] = get_latest_kernel('ck', config['skd_path'], 'bc_mpo_sc_scm_*_s????????_v??.bc')
+    replacements['reconstructed_spk'] = get_latest_kernel('spk', config['skd_path'], 'bc_mpo_fcp_0*_v??.bsp')
+
+    replacements = set_measured_dates(replacements, config['skd_path'] + '/ck/' + replacements['measured_ck'], 'MPO_SPACECRAFT', config)
+
+    replacements = get_dates_from_tags(config, replacements)
+
+    create_notebooks('BEPICOLOMBO', replacements, config)
+
+    # Update the HTMLs
+    update_html(config)
+
+    return
+
+
+def write_JUICE(config, config_file):
+
+    replacements = prepare_replacements(config, config_file)
+    spiops.load(replacements['metakernel'])
+
+    #
+    # We obtain the predicted and the measured CKs
+    #
+    replacements['predicted_ck'] = get_latest_kernel('ck', config['skd_path'], config['predicted_ck'])
+
+    ck_path = None
+    frame = None
+
+    if 'crema_ck' in config:
+        replacements['crema_ck'] = get_latest_kernel('ck', config['skd_path'], config['crema_ck'])
+        ck_path = os.path.join(config['skd_path'], 'ck', replacements['crema_ck'])
+        frame = 'JUICE_SPACECRAFT_PLAN'
+
+    if 'measured_ck' in config:
+        replacements['measured_ck'] = get_latest_kernel('ck', config['skd_path'], config['measured_ck'])
+        ck_path = os.path.join(config['skd_path'], 'ck', replacements['measured_ck'])
+        frame = 'JUICE_SPACECRAFT_MEAS'
+
+    replacements['reconstructed_spk'] = get_latest_kernel('spk', config['skd_path'], config['reconstructed_spk'])
+
+    replacements = set_measured_dates(replacements, ck_path, frame, config)
+
+    create_notebooks('JUICE', replacements, config)
+
+    # Update the HTMLs
+    update_html(config)
+
+    return
+
+
+def write_MarsExpress(config, config_file):
+
+    replacements = prepare_replacements(config, config_file)
+    spiops.load(replacements['metakernel'])
+
+    replacements = get_dates_from_tags(config, replacements)
+
+    print('Notebook start time {}'.format(replacements['start_time']))
+    print('Notebook finish time {}'.format(replacements['finish_time']))
+
+    create_notebooks('MARS-EXPRESS', replacements, config)
+
+    # Update the HTMLs
+    update_html(config)
+
+    return
+
+
+def write_SOLO(config, config_file):
+
+    replacements = prepare_replacements(config, config_file)
+    spiops.load(replacements['metakernel'])
+
+    # We obtain the predicted and the measured CKs
+    replacements['predicted_ck'] = get_latest_kernel('ck', config['skd_path'], config['predicted_ck'])
+
+    ck_path = None
+    if 'measured_ck' in config:
+        replacements['measured_ck'] = get_latest_kernel('ck', config['skd_path'], config['measured_ck'])
+        ck_path = os.path.join(config['skd_path'], 'ck', replacements['measured_ck'])
+
+    replacements['reconstructed_spk'] = get_latest_kernel('spk', config['skd_path'], config['reconstructed_spk'])
+
+    replacements = set_measured_dates(replacements, ck_path, 'SOLO_SRF', config)
+
+    create_notebooks('SOLO', replacements, config)
+
+    # Update the HTMLs
     update_html(config)
 
     return

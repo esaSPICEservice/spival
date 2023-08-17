@@ -1,0 +1,26 @@
+{
+  "version": "1.0",
+  "name": "spival Configuration File",
+  "mission": "SOLAR-ORBITER",
+  "github_skd_path": "SOLAR-ORBITER/kernels",
+  "skd_path": "/home/rvalles/spice/kernels/solar-orbiter/kernels",
+  "notebooks_path":"/home/rvalles/spice/spival/spival/tests/notebooks",
+  "index_path":"/home/rvalles/spice/spival/spival/tests/html",
+  "mk":"solo_ANC_soc-flown-mk_local.tm",
+  "measured_ck": "solo_ANC_soc-flown-att_*.bc",
+  "predicted_ck": "solo_ANC_soc-pred-att_*.bc",
+  "reconstructed_spk": "solo_ANC_soc-orbit-stp_*.bsp",
+  "email":[
+      {
+         "send_email":"False",
+         "clients":"spice@sciops.esa.int",
+         "developer":"spice@sciops.esa.int",
+         "mission":"SOLAR-ORBITER",
+         "skd_name":"",
+         "ftp_address":"Not available.",
+         "git_repository":"Not available.",
+         "contact":"   ESA SPICE Service\n   spice@sciops.esa.int"
+      }
+   ],
+  "sclk_start_coeff_idx":  { "solo": 1 }
+}
