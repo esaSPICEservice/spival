@@ -51,8 +51,8 @@ def set_measured_dates(replacements, ck_path, config, frame=None):
             raise Exception('Could not obtain coverage from ' + ck_path + ' for frame: ' + frame)
 
         mes_finish_time = boundary[-1][:-4]
-    except:
-        print(f"WARNING: Finish time for {replacements['measured_ck']} could not be determined")
+    except Exception as e:
+        print(f"WARNING: Finish time for {replacements['measured_ck']} could not be determined, err: " + str(e))
         now = datetime.datetime.now()
         mes_finish_time = now.strftime("%Y-%m-%dT%H:%M:%S")
 
