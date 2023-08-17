@@ -10,10 +10,10 @@ import traceback
 import git
 
 from spiops import spiops
-from spiops.utils.utils import get_latest_kernel
+from spiops.utils.utils import get_latest_kernel, get_sc, get_frame
 from spival.core.skd_validator import validate_files
 from spival.utils.skd_val_logger import write_final_report
-from spival.utils.utils import fill_template, get_sc, get_frame
+from spival.utils.utils import fill_template
 
 
 def prepare_replacements(config, config_file):
