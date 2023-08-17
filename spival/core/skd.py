@@ -34,7 +34,14 @@ def prepare_replacements(config, config_file):
     return replacements
 
 
-def set_measured_dates(replacements, ck_path, frame, config):
+def set_measured_dates(replacements, ck_path, config, frame=None):
+
+    if frame is None:
+        sc = get_sc(ck_path)
+        if sc is None:
+            raise ValueError('Could not retrieve spacecraft from: ' + ck_path)
+        frame = get_frame(sc)
+
     try:
         boundary = spiops.cov_ck_ker(ck_path, frame, time_format='UTC')
         if boundary is None:
@@ -145,7 +152,7 @@ def write_ExoMars2016(config, config_file):
     replacements['predicted_ck'] = get_latest_kernel('ck', config['skd_path'], 'em16_tgo_sc_fsp_*_s????????_v??.bc')
     replacements['measured_ck'] = get_latest_kernel('ck', config['skd_path'], 'em16_tgo_sc_ssm_*_s????????_v??.bc')
 
-    replacements = set_measured_dates(replacements, config['skd_path'] + '/ck/' + replacements['measured_ck'], 'TGO_SPACECRAFT', config)
+    replacements = set_measured_dates(replacements, config['skd_path'] + '/ck/' + replacements['measured_ck'], config)
 
     replacements = get_dates_from_tags(config, replacements)
 
@@ -170,7 +177,7 @@ def write_BepiColombo(config, config_file):
     replacements['measured_ck'] = get_latest_kernel('ck', config['skd_path'], 'bc_mpo_sc_scm_*_s????????_v??.bc')
     replacements['reconstructed_spk'] = get_latest_kernel('spk', config['skd_path'], 'bc_mpo_fcp_0*_v??.bsp')
 
-    replacements = set_measured_dates(replacements, config['skd_path'] + '/ck/' + replacements['measured_ck'], 'MPO_SPACECRAFT', config)
+    replacements = set_measured_dates(replacements, config['skd_path'] + '/ck/' + replacements['measured_ck'], config)
 
     replacements = get_dates_from_tags(config, replacements)
 
@@ -207,7 +214,7 @@ def write_JUICE(config, config_file):
 
     replacements['reconstructed_spk'] = get_latest_kernel('spk', config['skd_path'], config['reconstructed_spk'])
 
-    replacements = set_measured_dates(replacements, ck_path, frame, config)
+    replacements = set_measured_dates(replacements, ck_path, config, frame)
 
     create_notebooks('JUICE', replacements, config)
 
@@ -242,15 +249,12 @@ def write_SOLO(config, config_file):
 
     # We obtain the predicted and the measured CKs
     replacements['predicted_ck'] = get_latest_kernel('ck', config['skd_path'], config['predicted_ck'])
-
-    ck_path = None
-    if 'measured_ck' in config:
-        replacements['measured_ck'] = get_latest_kernel('ck', config['skd_path'], config['measured_ck'])
-        ck_path = os.path.join(config['skd_path'], 'ck', replacements['measured_ck'])
+    replacements['measured_ck'] = get_latest_kernel('ck', config['skd_path'], config['measured_ck'])
+    ck_path = os.path.join(config['skd_path'], 'ck', replacements['measured_ck'])
 
     replacements['reconstructed_spk'] = get_latest_kernel('spk', config['skd_path'], config['reconstructed_spk'])
 
-    replacements = set_measured_dates(replacements, ck_path, 'SOLO_SRF', config)
+    replacements = set_measured_dates(replacements, ck_path, config)
 
     create_notebooks('SOLO', replacements, config)
 
