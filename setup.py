@@ -34,7 +34,7 @@ setup(
         url="https://github.com/esaSPICEservice/spival",
 
         author='Marc Costa Sitja (ESA SPICE Service)',
-        author_email='esa_spice@sciops.esa.int',
+        author_email='esa_spice@esa.int',
 
         # Classifiers
         classifiers=[
