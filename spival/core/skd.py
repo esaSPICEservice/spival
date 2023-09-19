@@ -385,6 +385,7 @@ def update_html(config):
     bc_in_dir = list(reversed(glob.glob('BEPICOLOMBO_*.html')))
     juice_in_dir = list(reversed(glob.glob('JUICE_*.html')))
     mex_in_dir = list(reversed(glob.glob('MARS-EXPRESS_*.html')))
+    solo_in_dir = list(reversed(glob.glob('SOLO_*.html')))
     adcsng_in_dir = list(reversed(glob.glob('adcsng_v*.html')))
     root_dir = config['root_dir']
 
@@ -416,6 +417,11 @@ def update_html(config):
                 elif '{Mars-Express}' in line:
                     if mex_in_dir:
                         for html in mex_in_dir:
+                            f.write('<p><a href="http://spice.esac.esa.int/status/{}">{}</a></p>'
+                                    .format(html, html.split('.')[0]))
+                elif '{Solar-Orbiter}' in line:
+                    if solo_in_dir:
+                        for html in solo_in_dir:
                             f.write('<p><a href="http://spice.esac.esa.int/status/{}">{}</a></p>'
                                     .format(html, html.split('.')[0]))
                 else:
