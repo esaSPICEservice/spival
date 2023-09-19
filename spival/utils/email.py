@@ -17,7 +17,7 @@ def send_status_email(config, body_text='', error=False):
             raise
 
         SMTPserver = 'smtp.sciops.esa.int'
-        sender = 'esa_spice@sciops.esa.int'
+        sender = 'esa_spice@esa.int'
 
         destination = config['email'][0]['developer']
 

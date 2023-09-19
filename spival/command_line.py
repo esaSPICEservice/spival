@@ -48,7 +48,7 @@ def main(config=False, debug=False, log=False, mission=False):
    /__\ /__` '__\    /__` |__) | /  ` |__     /__` |__  |__) \  / | /  ` |__
    \__, .__/ \__/    .__/ |    | \__, |___    .__/ |___ |  \  \/  | \__, |___
 
- esa_spice@sciops.esa.int
+ esa_spice@esa.int
  http://spice.esac.esa.int
 
 ''')
