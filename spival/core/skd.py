@@ -155,7 +155,7 @@ def write_ExoMars2016(config, config_file):
     replacements['predicted_ck'] = get_latest_kernel('ck', config['skd_path'], 'em16_tgo_sc_fsp_*_s????????_v??.bc')
     replacements['measured_ck'] = get_latest_kernel('ck', config['skd_path'], 'em16_tgo_sc_ssm_*_s????????_v??.bc')
 
-    replacements = set_measured_dates(replacements, config['skd_path'] + '/ck/' + replacements['measured_ck'], config)
+    replacements = set_measured_dates(replacements, replacements['measured_ck'], config)
 
     replacements = get_dates_from_tags(config, replacements)
 
@@ -180,7 +180,7 @@ def write_BepiColombo(config, config_file):
     replacements['measured_ck'] = get_latest_kernel('ck', config['skd_path'], 'bc_mpo_sc_scm_*_s????????_v??.bc')
     replacements['reconstructed_spk'] = get_latest_kernel('spk', config['skd_path'], 'bc_mpo_fcp_0*_v??.bsp')
 
-    replacements = set_measured_dates(replacements, config['skd_path'] + '/ck/' + replacements['measured_ck'], config)
+    replacements = set_measured_dates(replacements, replacements['measured_ck'], config)
 
     replacements = get_dates_from_tags(config, replacements)
 
@@ -216,10 +216,9 @@ def write_JUICE(config, config_file):
             crema_ck = get_latest_kernel('ck', config['staging_path'], config['crema_ck'])
         if crema_ck:
             replacements['crema_ck'] = crema_ck
-            ck_path = os.path.join(config['staging_path'], 'ck', replacements['crema_ck'])
         else:
             replacements['crema_ck'] = get_latest_kernel('ck', config['skd_path'], config['crema_ck'])
-            ck_path = os.path.join(config['skd_path'], 'ck', replacements['crema_ck'])
+        ck_path = replacements['crema_ck']
         frame = 'JUICE_SPACECRAFT_PLAN'
 
     if 'measured_ck' in config:
@@ -227,10 +226,9 @@ def write_JUICE(config, config_file):
             measured_ck = get_latest_kernel('ck', config['staging_path'], config['measured_ck'])
         if measured_ck:
             replacements['measured_ck'] = measured_ck
-            ck_path = os.path.join(config['staging_path'], 'ck', replacements['measured_ck'])
         else:
             replacements['measured_ck'] = get_latest_kernel('ck', config['skd_path'], config['measured_ck'])
-            ck_path = os.path.join(config['skd_path'], 'ck', replacements['measured_ck'])
+        ck_path = replacements['measured_ck']
         frame = 'JUICE_SPACECRAFT_MEAS'
 
     if 'staging_path' in config:
@@ -276,7 +274,7 @@ def write_SOLO(config, config_file):
     # We obtain the predicted and the measured CKs
     replacements['predicted_ck'] = get_latest_kernel('ck', config['skd_path'], config['predicted_ck'])
     replacements['measured_ck'] = get_latest_kernel('ck', config['skd_path'], config['measured_ck'])
-    ck_path = os.path.join(config['skd_path'], 'ck', replacements['measured_ck'])
+    ck_path = replacements['measured_ck']
 
     replacements['reconstructed_spk'] = get_latest_kernel('spk', config['skd_path'], config['reconstructed_spk'])
 
