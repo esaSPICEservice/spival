@@ -193,23 +193,41 @@ def write_JUICE(config, config_file):
 
     replacements = prepare_replacements(config, config_file)
     spiops.load(replacements['metakernel'])
+    predicted_ck, crema_ck, measured_ck = '', '', ''
 
     #
     # We obtain the predicted and the measured CKs
     #
-    replacements['predicted_ck'] = get_latest_kernel('ck', config['skd_path'], config['predicted_ck'])
+    if 'staging_path' in config:
+        predicted_ck = get_latest_kernel('ck', config['staging_path'], config['predicted_ck'])
+    if predicted_ck:
+        replacements['predicted_ck'] = predicted_ck
+    else:
+        replacements['predicted_ck'] = get_latest_kernel('ck', config['skd_path'], config['predicted_ck'])
 
     ck_path = None
     frame = None
 
     if 'crema_ck' in config:
-        replacements['crema_ck'] = get_latest_kernel('ck', config['skd_path'], config['crema_ck'])
-        ck_path = os.path.join(config['skd_path'], 'ck', replacements['crema_ck'])
+        if 'staging_path' in config:
+            crema_ck = get_latest_kernel('ck', config['staging_path'], config['crema_ck'])
+        if crema_ck:
+            replacements['crema_ck'] = crema_ck
+            ck_path = os.path.join(config['staging_path'], 'ck', replacements['crema_ck'])
+        else:
+            replacements['crema_ck'] = get_latest_kernel('ck', config['skd_path'], config['crema_ck'])
+            ck_path = os.path.join(config['skd_path'], 'ck', replacements['crema_ck'])
         frame = 'JUICE_SPACECRAFT_PLAN'
 
     if 'measured_ck' in config:
-        replacements['measured_ck'] = get_latest_kernel('ck', config['skd_path'], config['measured_ck'])
-        ck_path = os.path.join(config['skd_path'], 'ck', replacements['measured_ck'])
+        if 'staging_path' in config:
+            measured_ck = get_latest_kernel('ck', config['staging_path'], config['measured_ck'])
+        if measured_ck:
+            replacements['measured_ck'] = measured_ck
+            ck_path = os.path.join(config['staging_path'], 'ck', replacements['measured_ck'])
+        else:
+            replacements['measured_ck'] = get_latest_kernel('ck', config['skd_path'], config['measured_ck'])
+            ck_path = os.path.join(config['skd_path'], 'ck', replacements['measured_ck'])
         frame = 'JUICE_SPACECRAFT_MEAS'
 
     replacements['reconstructed_spk'] = get_latest_kernel('spk', config['skd_path'], config['reconstructed_spk'])
