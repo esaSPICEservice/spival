@@ -17,7 +17,10 @@ from spival.utils.utils import fill_template
 
 
 def prepare_replacements(config, config_file):
-    replacements = {'metakernel': config['skd_path'] + '/mk/' + config['mk']}
+    mk_path = config['skd_path']
+    if 'spival' in config['mk']:
+        mk_path = config['staging_path']
+    replacements = {'metakernel': mk_path + '/mk/' + config['mk']}
     replacements['config_file'] = config_file
 
     with open(replacements['metakernel'], 'r') as f:
