@@ -237,8 +237,7 @@ def write_JUICE(config, config_file):
         if commanded_ck:
             replacements['commanded_ck'] = commanded_ck
         else:
-            replacements['commanded_ck'] = measured_ck.replace('meas', 'cmmd')
-        ck_path = replacements['commanded_ck']
+            replacements['commanded_ck'] = replacements['measured_ck'].replace('meas', 'cmmd')
         frame = 'JUICE_SPACECRAFT_MEAS'
 
     if 'staging_path' in config:
