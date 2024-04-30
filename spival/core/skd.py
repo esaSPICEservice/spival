@@ -196,7 +196,7 @@ def write_JUICE(config, config_file):
 
     replacements = prepare_replacements(config, config_file)
     spiops.load(replacements['metakernel'])
-    predicted_ck, crema_ck, measured_ck, reconstructed_spk = '', '', '', ''
+    predicted_ck, crema_ck, measured_ck, commanded_ck, reconstructed_spk = '', '', '', '', ''
 
     #
     # We obtain the predicted and the measured CKs
@@ -229,6 +229,16 @@ def write_JUICE(config, config_file):
         else:
             replacements['measured_ck'] = get_latest_kernel('ck', config['skd_path'], config['measured_ck'])
         ck_path = replacements['measured_ck']
+        frame = 'JUICE_SPACECRAFT_MEAS'
+
+    if 'commanded_ck' in config:
+        if 'staging_path' in config:
+            commanded_ck = get_latest_kernel('ck', config['staging_path'], config['commanded_ck'])
+        if commanded_ck:
+            replacements['commanded_ck'] = commanded_ck
+        else:
+            replacements['commanded_ck'] = measured_ck.replace('meas', 'cmmd')
+        ck_path = replacements['commanded_ck']
         frame = 'JUICE_SPACECRAFT_MEAS'
 
     if 'staging_path' in config:
