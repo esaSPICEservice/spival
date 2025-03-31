@@ -247,6 +247,14 @@ def write_JUICE(config, config_file):
     else:
         replacements['reconstructed_spk'] = get_latest_kernel('spk', config['skd_path'], config['reconstructed_spk'])
 
+    replacements['man_path'] = ""
+    if "man_path" in config:
+        replacements['man_path'] = config['man_path']
+
+    replacements['crema_oem'] = ""
+    if "crema_oem" in config:
+        replacements['crema_oem'] = config['crema_oem']
+
     replacements = set_measured_dates(replacements, ck_path, config, frame)
 
     create_notebooks('JUICE', replacements, config)
