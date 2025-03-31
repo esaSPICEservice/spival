@@ -409,7 +409,7 @@ def has_valid_version_and_date_section(kernel_file):
     for line in text.splitlines():
         if line.strip().startswith("Version"):
 
-            if "-draft" in line:
+            if "draft" in line.lower():
                 # Ignore draft versions
                 continue
 
