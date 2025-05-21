@@ -13,13 +13,13 @@
   "email":[
       {
          "send_email":"False",
-         "clients":"spice@sciops.esa.int",
-         "developer":"spice@sciops.esa.int",
+         "clients":"spice@cosmos.esa.int",
+         "developer":"spice@cosmos.esa.int",
          "mission":"SOLAR-ORBITER",
          "skd_name":"",
          "ftp_address":"Not available.",
          "git_repository":"Not available.",
-         "contact":"   ESA SPICE Service\n   spice@sciops.esa.int"
+         "contact":"   ESA SPICE Service\n   spice@cosmos.esa.int"
       }
    ],
   "sclk_start_coeff_idx":  { "solo": 1 }

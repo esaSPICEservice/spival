@@ -16,13 +16,13 @@ def send_status_email(config, body_text='', error=False):
             print(error_message)
             raise
 
-        SMTPserver = 'smtp.sciops.esa.int'
+        SMTPserver = 'smtp.cosmos.esa.int'
         sender = 'esa_spice@esa.int'
 
         destination = config['email'][0]['developer']
 
         USERNAME = "esa_spice"
-        PASSWORD = "WRUBTNBLOJMHLUOR"
+        PASSWORD = ""
 
         # typical values for text_subtype are plain, html, xml
         text_subtype = 'html'
