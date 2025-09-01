@@ -21,8 +21,8 @@ def send_status_email(config, body_text='', error=False):
 
         destination = config['email'][0]['developer']
 
-        USERNAME = "esa_spice"
-        PASSWORD = ""
+        #USERNAME = "esa_spice"
+        #PASSWORD = ""
 
         # typical values for text_subtype are plain, html, xml
         text_subtype = 'html'
@@ -57,7 +57,7 @@ def send_status_email(config, body_text='', error=False):
                 conn.esmtp_features['auth'] = 'LOGIN DIGEST-MD5 PLAIN'
 
                 conn.set_debuglevel(False)
-                conn.login(USERNAME, PASSWORD)
+                # conn.login(USERNAME, PASSWORD), not needed anymore after sciops to cosmos migration
                 try:
                     conn.sendmail(sender, dest_email, msg.as_string() + '\n\n' + config['email'][0]['report'])
                 except Exception as exc:
